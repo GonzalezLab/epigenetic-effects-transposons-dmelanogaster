@@ -588,15 +588,44 @@ wilcox.test(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="ovary" & e
 
 wilcox.test(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="ovary" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="bivalent", c("TE", "average", "spread")])$spread, unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="gut" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="bivalent", c("TE", "average", "spread")])$spread)
 
+# Head less in other tissues 
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="head" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K9me3", ]$TE)) 
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="ovary" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K9me3", ]$TE))
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="gut" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K9me3", ]$TE))
+prop.test(c(140,576),n=c(816,816))
+chisq.test(matrix(c(140,576,816-140,816-576),ncol = 2))
+prop.test(c(140,305),n=c(816,816))
+chisq.test(matrix(c(140,305,816-140,816-305),ncol = 2))
+
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="head" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K27ac", ]$TE)) 
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="ovary" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K27ac", ]$TE))
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$tissue=="gut" & epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K27ac", ]$TE))
+prop.test(c(88,112),n=c(345,345))
+chisq.test(matrix(c(88,112,345-88,345-112),ncol = 2))
+prop.test(c(88,183),n=c(345,345))
+chisq.test(matrix(c(88,183,345-88,345-183),ncol = 2))
+prop.test(c(112,183),n=c(345,345))
+chisq.test(matrix(c(112,183,345-112,345-183),ncol = 2))
+
+
 # Proportion in gut and ovary that enrich for bivalent
 prop.test(c(147,133),n=c(304,304))
+chisq.test(matrix(c(147,133,304-147,304-133),ncol = 2))
 
 # Proportion of H3K9me3 and H3K27ac that deplete
 prop.test(c(200,223),n=c(552,552))
+chisq.test(matrix(c(200,223,552-200,552-223),ncol = 2))
+
 # By body part
 prop.test(c(267,287),n=c(552,552))
+chisq.test(matrix(c(267,287,552-267,552-287),ncol = 2))
+
 prop.test(c(267,271),n=c(552,552))
+chisq.test(matrix(c(267,271,552-267,552-271),ncol = 2))
+
 prop.test(c(287,271),n=c(552,552))
+chisq.test(matrix(c(287,271,552-287,552-271),ncol = 2))
+
 
 ```
 
@@ -776,6 +805,7 @@ length(unique(zscoreTMM$TE))
 length(unique(zscoreTMM$gene))
 length(unique(zscoreTMM[zscoreTMM$zscore>0 & zscoreTMM$pvalue<0.05,]$TE))
 length(unique(zscoreTMM[zscoreTMM$zscore<0 & zscoreTMM$pvalue<0.05,]$TE))
+length(intersect(unique(zscoreTMM[zscoreTMM$zscore>0 & zscoreTMM$pvalue<0.05,]$TE),unique(zscoreTMM[zscoreTMM$zscore<0 & zscoreTMM$pvalue<0.05,]$TE)))
 table(unique(zscoreTMM[zscoreTMM$pvalue<0.05, c("gene","position")])$position)
 
 ggplot(zscoreTMM, aes(x=log2FC, y=-log10(pvalue))) + geom_point(aes(color = zscore < 0, shape = pvalue < 0.05)) + ylim(c(0,35)) + xlim(-20,20)
@@ -793,13 +823,35 @@ zscoreTMM[zscoreTMM$position=="intron",]$position<-"Intron"
 zscoreTMM$histone <- factor(zscoreTMM$histone,levels=c("H3K9me3","H3K27ac","Bivalent"))
 zscoreTMM$position <- factor(zscoreTMM$position,levels=c("Upstream", "5'UTR", "CDS", "Intron", "3'UTR", "Downstream"))
 
-expr_plot <- ggplot(zscoreTMM[zscoreTMM$avg<1000,], aes(x=zscore, y=avg)) +
 
-  geom_point(aes(color = position, alpha = pvalue < 0.05)) + 
-    theme_light(base_size = 18) + scale_color_manual(values=c("#374E55FF", "#DF8F44FF", "#00A1D5FF", "#79AF97FF", "#B24745FF", "#6A6599FF")) +     scale_alpha_manual(values = c(0.1, 1), guide=FALSE) + 
-    labs(x="Expression z-score", y = "Mean % increase in enrichment", color="TE position")   + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 10)) + theme(axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + facet_grid(.~histone,scales = "free_y") + geom_hline(yintercept=0) + geom_vline(xintercept = 0) + theme(legend.position = "bottom")
+df <- data.frame(
+  histone = c("H3K9me3", "H3K9me3", "H3K9me3", "H3K9me3", "H3K27ac", "H3K27ac", "H3K27ac", "H3K27ac", "Bivalent", "Bivalent", "Bivalent", "Bivalent"),
+  zscore = c(-35, -35, 27, 27, -35, -35, 27, 27, -35, -35, 27, 27),
+  avg = c(820, -50, 820, -50, 820, -50, 820, -50, 820, -50, 820, -50),
+  n = c(238, 34, 135, 37, 55, 68, 51, 41, 78, 44, 43, 24),
+  color = c("#A5C956", "#F18657", "#F18657", "#A5C956", "#F18657", "#A5C956", "#A5C956", "#F18657", "#B3B3B3", "#B3B3B3", "#B3B3B3", "#B3B3B3")
+)
+df$histone <- factor(df$histone,levels=c("H3K9me3","H3K27ac","Bivalent"))
+
+zscoreTMM$position2 <- zscoreTMM$position
+zscoreTMM[zscoreTMM$position=="CDS" | zscoreTMM$position=="5'UTR" | zscoreTMM$position=="3'UTR",]$position2 <- "Exon"
+zscoreTMM$position2 <- factor(zscoreTMM$position2, levels=c("Upstream", "Exon", "Intron", "Downstream"))
+expr_plot <- ggplot(zscoreTMM[zscoreTMM$avg < 1000, ], aes(x = zscore, y = avg)) +
+    geom_point(aes(color = position2, alpha = pvalue < 0.05)) +
+    geom_label(data=df, mapping=aes(label = n, fill = color), size = 5, color = "white", alpha = 0.9, show.legend = FALSE) +
+    theme_light(base_size = 18) +
+    scale_color_manual(values = c("#374E55FF", "#DF8F44FF", "#79AF97FF", "#00A1D5FF", "#B24745FF", "#6A6599FF")) +
+  scale_fill_identity() +
+    scale_alpha_manual(values = c(0.1, 1), guide = FALSE) +
+    labs(x = "Expression z-score", y = "Mean % increase in enrichment", color = "TE position") +
+    scale_y_continuous(expand = c(0, 0), breaks = scales::pretty_breaks(n = 10)) +
+    theme(axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) +
+    facet_grid(. ~ histone, scales = "free_y") +
+    geom_hline(yintercept = 0) +
+    geom_vline(xintercept = 0) +
+    theme(legend.position = "bottom")
 expr_plot
-ggsave("FIGURES/Figure_5.pdf",expr_plot,width = 10, height = 9)
+ggsave("FIGURES/Figure_5.pdf",expr_plot,width = 12, height = 9)
 save(file="FIGURES/Figure_5.RData", expr_plot)
 
 zscoreTMM$pvalueF<-""
@@ -835,8 +887,12 @@ length(unique(zscoreTMM[ zscoreTMM$tissue=="ovary",]$gene))
 427/879
 
 prop.test(x=c(228,305), n=c(482,746))
+chisq.test(matrix(c(228,305,482-228,746-305),ncol=2))
 prop.test(x=c(228,427), n=c(482,879))
+chisq.test(matrix(c(228,427,482-228,879-427),ncol=2))
 prop.test(x=c(305,427), n=c(746,879))
+chisq.test(matrix(c(305,427,746-305,879-427),ncol=2))
+
 
 length(unique(zscoreTMM[ zscoreTMM$pvalueF=="Significant" & zscoreTMM$strainTE=="AKA-017",]$gene))
 length(unique(zscoreTMM[ zscoreTMM$pvalueF=="Significant" & zscoreTMM$strainTE=="JUT-011",]$gene))
@@ -849,6 +905,51 @@ write.table(zscoreTMM,file="FIGURES/zscoreTMM.tab", col.names = T, sep = "\t", r
 
 ```
 
+Test position
+```{r}
+zscoreTMM_H3K9me3_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF, correct=T)
+table(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+zscoreTMM_H3K9me3_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF, correct=T)
+table(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+zscoreTMM_H3K27ac_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF, correct=T)
+table(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+zscoreTMM_H3K27ac_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF, correct=T)
+table(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+zscoreTMM_Bivalent_enrich <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF, correct=T)
+table(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+zscoreTMM_Bivalent_deplete <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+
+chisq.test(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF, correct=T)
+table(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+
+```
 
 ```{r table2}
 length(unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$effect=="increment",]$TE))
@@ -907,20 +1008,20 @@ frequency_5G <- frequency[frequency$TE %in% list_TEs_5G$V1,]
 
 length(unique(frequency_5G[frequency_5G$`Number_of_genomes_present_(47)`==1,]$TE))
 length(unique(TEs_enrich_H3K9me3[TEs_enrich_H3K9me3$`Number_of_genomes_present_(47)`==1,]$TE))
-fisher.test(matrix(c(4823,2316,816,628),nrow=2))
-fisher.test(matrix(c(4823,2946,816,766),nrow=2))
-fisher.test(matrix(c(4823,1692,816,30),nrow=2))
+#fisher.test(matrix(c(816,628,4823,2316),nrow=2))
+#fisher.test(matrix(c(4823,2946,816,766),nrow=2))
+#fisher.test(matrix(c(4823,1692,816,30),nrow=2))
 
 length(unique(TEs_enrich_H3K27ac[TEs_enrich_H3K27ac$`Number_of_genomes_present_(47)`==1,]$TE))
 length(unique(TEs_enrich_H3K27ac[TEs_enrich_H3K27ac$`Number_of_genomes_present_(47)`<=3,]$TE))
 length(unique(TEs_enrich_H3K27ac[TEs_enrich_H3K27ac$`Number_of_genomes_present_(47)`<=5,]$TE))
-fisher.test(matrix(c(4823,2316,345,275),nrow=2))
-fisher.test(matrix(c(4823,2946,345,325),nrow=2))
-fisher.test(matrix(c(4823,3131,345,336),nrow=2))
+#fisher.test(matrix(c(4823,2316,345,275),nrow=2))
+#fisher.test(matrix(c(4823,2946,345,325),nrow=2))
+#fisher.test(matrix(c(4823,3131,345,336),nrow=2))
 
 
 length(unique(frequency_5G[!is.na(frequency_5G$GeneDistance),]$TE))
-fisher.test(matrix(c(3528,1295,630,186),nrow=2))
+#fisher.test(matrix(c(3528,1295,630,186),nrow=2))
 
 
 zscoreTMM2 <- merge(zscoreTMM, dist)
@@ -932,34 +1033,90 @@ length(unique(TEs_enrich_H3K9me3_downregulate$TE))
 length(unique(TEs_enrich_H3K9me3_downregulate[TEs_enrich_H3K9me3_downregulate$`Number_of_genomes_present_(47)`==1,]$TE))
 length(unique(TEs_enrich_H3K9me3_downregulate[TEs_enrich_H3K9me3_downregulate$`Number_of_genomes_present_(47)`<=3,]$TE))
 length(unique(TEs_enrich_H3K9me3_downregulate[TEs_enrich_H3K9me3_downregulate$`Number_of_genomes_present_(47)`<=5,]$TE))
+length(unique(TEs_enrich_H3K9me3_downregulate[TEs_enrich_H3K9me3_downregulate$`Number_of_genomes_present_(47)`>5,]$TE))
 
-fisher.test(matrix(c(4823,2316,238,173),nrow=2))
-fisher.test(matrix(c(4823,2946,238,220),nrow=2))
-fisher.test(matrix(c(4823,3131,238,229),nrow=2))
+chisq.test(matrix(c(173,2316,238-173,4823-2316),nrow=2))
+fisher.test(matrix(c(173,2316,238-173,4823-2316),nrow=2))
+prop.test(x=c(173,2316),n=c(238,4823))
+
+chisq.test(matrix(c(220,2316,238-220,4823-2316),nrow=2))
+fisher.test(matrix(c(220,2316,238-220,4823-2316),nrow=2))
+prop.test(x=c(220,2316),n=c(238,4823))
+
+chisq.test(matrix(c(229,2316,238-229,4823-2316),nrow=2))
+fisher.test(matrix(c(229,2316,238-229,4823-2316),nrow=2))
+prop.test(x=c(229,2316),n=c(238,4823))
+
 
 TEs_enrich_H3K27ac_upregulate <- zscoreTMM2[zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]
+length(unique(TEs_enrich_H3K27ac_upregulate$TE))
 length(unique(TEs_enrich_H3K27ac_upregulate[TEs_enrich_H3K27ac_upregulate$`Number_of_genomes_present_(47)`==1,]$TE))
 length(unique(TEs_enrich_H3K27ac_upregulate[TEs_enrich_H3K27ac_upregulate$`Number_of_genomes_present_(47)`<=3,]$TE))
 length(unique(TEs_enrich_H3K27ac_upregulate[TEs_enrich_H3K27ac_upregulate$`Number_of_genomes_present_(47)`<=5,]$TE))
-fisher.test(matrix(c(4823,2316,51,44),nrow=2))
-fisher.test(matrix(c(4823,2946,51,48),nrow=2))
-fisher.test(matrix(c(4823,3131,51,49),nrow=2))
+length(unique(TEs_enrich_H3K27ac_upregulate[TEs_enrich_H3K27ac_upregulate$`Number_of_genomes_present_(47)`>5,]$TE))
 
-TEs_enrich_H3K9me3_effect <- zscoreTMM2[zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="increment",]
-length(unique(TEs_enrich_H3K9me3_effect[TEs_enrich_H3K9me3_effect$`Number_of_genomes_present_(47)`==1,]$TE))
-fisher.test(matrix(c(4823,2316,340,252),nrow=2))
-fisher.test(matrix(c(4823,2946,340,317),nrow=2))
-fisher.test(matrix(c(4823,3131,340,329),nrow=2))
+fisher.test(matrix(c(44,2316,51-44,4823-2316),nrow=2))
+chisq.test(matrix(c(44,2316,51-44,4823-2316),nrow=2))
+prop.test(x=c(44,2316),n=c(51,4823))
+
+fisher.test(matrix(c(48,2316,51-48,4823-2316),nrow=2))
+chisq.test(matrix(c(48,2316,51-48,4823-2316),nrow=2))
+prop.test(x=c(48,2316),n=c(51,4823))
+
+fisher.test(matrix(c(49,2316,51-49,4823-2316),nrow=2))
+chisq.test(matrix(c(49,2316,51-49,4823-2316),nrow=2))
+prop.test(x=c(49,2316),n=c(51,4823))
+
+TEs_deplete_H3K9me3_upregulate <- zscoreTMM2[zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="depletion",]
+length(unique(TEs_deplete_H3K9me3_upregulate$TE))
+length(unique(TEs_deplete_H3K9me3_upregulate[TEs_deplete_H3K9me3_upregulate$`Number_of_genomes_present_(47)`==1,]$TE))
+length(unique(TEs_deplete_H3K9me3_upregulate[TEs_deplete_H3K9me3_upregulate$`Number_of_genomes_present_(47)`<=3,]$TE))
+length(unique(TEs_deplete_H3K9me3_upregulate[TEs_deplete_H3K9me3_upregulate$`Number_of_genomes_present_(47)`<=5,]$TE))
+length(unique(TEs_deplete_H3K9me3_upregulate[TEs_deplete_H3K9me3_upregulate$`Number_of_genomes_present_(47)`>5,]$TE))
+
+chisq.test(matrix(c(20,2316,37-20,4823-2316),nrow=2))
+fisher.test(matrix(c(20,2316,37-20,4823-2316),nrow=2))
+prop.test(x=c(20,2316),n=c(37,4823))
+
+chisq.test(matrix(c(28,2316,37-28,4823-2316),nrow=2))
+fisher.test(matrix(c(28,2316,37-28,4823-2316),nrow=2))
+prop.test(x=c(28,2316),n=c(37,4823))
+
+chisq.test(matrix(c(30,2316,37-30,4823-2316),nrow=2))
+fisher.test(matrix(c(30,2316,37-30,4823-2316),nrow=2))
+prop.test(x=c(30,2316),n=c(37,4823))
+
+length(unique(TEs_deplete_H3K9me3_upregulate[TEs_deplete_H3K9me3_upregulate$`Number_of_genomes_present_(47)`>5,]$TE))
+
+TEs_deplete_H3K27ac_downregulate <- zscoreTMM2[zscoreTMM2$zscoreF=="Negative" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="depletion",]
+length(unique(TEs_deplete_H3K27ac_downregulate$TE))
+length(unique(TEs_deplete_H3K27ac_downregulate[TEs_deplete_H3K27ac_downregulate$`Number_of_genomes_present_(47)`==1,]$TE))
+length(unique(TEs_deplete_H3K27ac_downregulate[TEs_deplete_H3K27ac_downregulate$`Number_of_genomes_present_(47)`<=3,]$TE))
+length(unique(TEs_deplete_H3K27ac_downregulate[TEs_deplete_H3K27ac_downregulate$`Number_of_genomes_present_(47)`<=5,]$TE))
+length(unique(TEs_deplete_H3K27ac_downregulate[TEs_deplete_H3K27ac_downregulate$`Number_of_genomes_present_(47)`>5,]$TE))
+
+fisher.test(matrix(c(49,2316,68-49,4823-2316),nrow=2))
+chisq.test(matrix(c(49,2316,68-49,4823-2316),nrow=2))
+prop.test(x=c(49,2316),n=c(68,4823))
+
+fisher.test(matrix(c(60,2316,68-60,4823-2316),nrow=2))
+chisq.test(matrix(c(60,2316,68-60,4823-2316),nrow=2))
+prop.test(x=c(60,2316),n=c(68,4823))
 
 
-TEs_enrich_H3K27ac_effect <- zscoreTMM2[ zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]
-length(unique(TEs_enrich_H3K27ac_effect[TEs_enrich_H3K27ac_effect$`Number_of_genomes_present_(47)`==1,]$TE))
-length(unique(TEs_enrich_H3K27ac_effect[TEs_enrich_H3K27ac_effect$`Number_of_genomes_present_(47)`<=3,]$TE))
-length(unique(TEs_enrich_H3K27ac_effect[TEs_enrich_H3K27ac_effect$`Number_of_genomes_present_(47)`<=5,]$TE))
-fisher.test(matrix(c(4823,2316,102,83),nrow=2))
-fisher.test(matrix(c(4823,2946,102,97),nrow=2))
-fisher.test(matrix(c(4823,3131,102,98),nrow=2))
+fisher.test(matrix(c(62,2316,68-62,4823-2316),nrow=2))
+chisq.test(matrix(c(62,2316,68-62,4823-2316),nrow=2))
+prop.test(x=c(62,2316),n=c(68,4823))
 
+
+length(unique(zscoreTMM2[zscoreTMM2$zscoreF=="Negative" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="depletion" | zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="depletion"  | zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="increment" | zscoreTMM2$zscoreF=="Negative" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]$TE))
+
+length(unique(zscoreTMM2[zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="increment" | zscoreTMM2$zscoreF=="Negative" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]$TE))
+
+
+length(unique(zscoreTMM2[zscoreTMM2$zscoreF=="Negative" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="increment" | zscoreTMM2$zscoreF=="Positive" & zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]$TE))
+
+length(unique(zscoreTMM2[zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K9me3" & zscoreTMM2$effect=="increment" | zscoreTMM2$pvalueF=="Significant" & zscoreTMM2$histone=="H3K27ac" & zscoreTMM2$effect=="increment",]$TE))
 ```
 
 ```{r tes-properties}
@@ -1163,6 +1320,8 @@ ggplot(TEinfo2235, aes(x=superfamily,fill=depletionH3K27ac)) + geom_bar(position
     freqEnrichmentH3K9me3_filter[TE,2]
     freqEnrichmentH3K9me3_filter[TE,3]
     p_value <- prop.test(x = c(pull(freqEnrichmentH3K9me3_filter[TE,3]), 816), n = c(pull(freqEnrichmentH3K9me3_filter[TE,2]), 2235))$p.value
+        #p_value <- chisq.test(matrix(c(pull(freqEnrichmentH3K9me3_filter[TE,3]), 816, pull(freqEnrichmentH3K9me3_filter[TE,2]), 2235),ncol = 2))$p.value
+
     sign <- ifelse(prop.test(x = c(pull(freqEnrichmentH3K9me3_filter[TE,3]), 816), n = c(pull(freqEnrichmentH3K9me3_filter[TE,2]), 2235))$estimate[1] > 816/2235, "+", "-")
     freqEnrichmentH3K9me3_filter[TE,]$p.value<- p_value
     freqEnrichmentH3K9me3_filter[TE,]$sign<- sign
@@ -1182,6 +1341,7 @@ ggplot(TEinfo2235, aes(x=superfamily,fill=depletionH3K27ac)) + geom_bar(position
     freqEnrichmentH3K27ac_filter[TE,2]
     freqEnrichmentH3K27ac_filter[TE,3]
     p_value <- prop.test(x = c(pull(freqEnrichmentH3K27ac_filter[TE,3]), 345), n = c(pull(freqEnrichmentH3K27ac_filter[TE,2]), 2235))$p.value
+    #p_value <- chisq.test(matrix(c(pull(freqEnrichmentH3K27ac_filter[TE,3]), 345, pull(freqEnrichmentH3K27ac_filter[TE,2]), 2235),ncol = 2))$p.value
     sign <- ifelse(prop.test(x = c(pull(freqEnrichmentH3K27ac_filter[TE,3]), 345), n = c(pull(freqEnrichmentH3K27ac_filter[TE,2]), 2235))$estimate[1] > 345/2235, "+", "-")
     freqEnrichmentH3K27ac_filter[TE,]$p.value<- p_value
     freqEnrichmentH3K27ac_filter[TE,]$sign<- sign
@@ -1201,6 +1361,8 @@ ggplot(TEinfo2235, aes(x=superfamily,fill=depletionH3K27ac)) + geom_bar(position
     freqEnrichmentBivalent_filter[TE,2]
     freqEnrichmentBivalent_filter[TE,3]
     p_value <- prop.test(x = c(pull(freqEnrichmentBivalent_filter[TE,3]), 304), n = c(pull(freqEnrichmentBivalent_filter[TE,2]), 2235))$p.value
+        #p_value <- chisq.test(matrix(c(pull(freqEnrichmentBivalent_filter[TE,3]), 304, pull(freqEnrichmentBivalent_filter[TE,2]), 2235),ncol = 2))$p.value
+
     sign <- ifelse(prop.test(x = c(pull(freqEnrichmentBivalent_filter[TE,3]), 304), n = c(pull(freqEnrichmentBivalent_filter[TE,2]), 2235))$estimate[1] > 304/2235, "+", "-")
     freqEnrichmentBivalent_filter[TE,]$p.value<- p_value
     freqEnrichmentBivalent_filter[TE,]$sign<- sign
@@ -1409,4 +1571,17 @@ write.table(go_enrich@result, "FIGURES/GO_metastable.tsv", col.names = T, sep = 
 
 ggarrange(head_all, head_upregulated, head_downregulated, gut_all, gut_upregulated, gut_downregulated,metastable,labels="AUTO")
 ggsave("FIGURES/Figure_S4.pdf", ggarrange(head_all, head_upregulated, head_downregulated, gut_all, gut_upregulated, gut_downregulated,metastable,labels="AUTO"), width = 18, height = 18)
+```
+
+```{r}
+epigeneticEffectsTesALl <- merge(epigeneticEffectsTes2,epigeneticEffectsTesInfoLength,by=c("TE", "strainTE", "tissue", "effect", "strainBreakpoint", "epigeneticEffect", 
+"histone.x", "spread", "average", "frequency", "problem", "threshold", 
+"histone"))
+epigeneticEffectsTesALl$histone.x <- NULL
+epigeneticEffectsTesALl$frequency <- NULL
+epigeneticEffectsTesALl$problem <- NULL
+epigeneticEffectsTesALl$length.x <- NULL
+epigeneticEffectsTesALl$length <- epigeneticEffectsTesALl$length.y
+epigeneticEffectsTesALl$length.y <- NULL
+write.table(epigeneticEffectsTesALl$length.y,"FIGURES/epigeneticEffectsTesAll.tab", col.names = T, row.names = F, quote = F, sep = "\t")
 ```
