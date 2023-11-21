@@ -179,12 +179,18 @@ ggsave("FIGURES/Figure_1.pdf", plot = ggarrange(figure1_a,figure_1b, widths = c(
 Analysis of TEs with epigenetic effects.
 ```{r}
 epigeneticEffectsTes <- fread("epigenetic_effects/epigeneticEffectsTesParsed_v5.tab")
+length(unique(epigeneticEffectsTes))
 
 TEs_epigenetic_effects <- unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" | epigeneticEffectsTes$effect=="depletion",]$TE)
+length(unique(TEs_epigenetic_effects))
 
 length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE %in% TEs_epigenetic_effects & epigeneticEffectsTes$effect!="mix",]$TE))
 
 length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE %in% TEs_epigenetic_effects & epigeneticEffectsTes$effect=="mix",]$TE))
+
+epigeneticEffectsTes_nomix<-epigeneticEffectsTes[epigeneticEffectsTes$effect!="mix",]
+length(unique(epigeneticEffectsTes_nomix[!epigeneticEffectsTes_nomix$TE %in% TEs_epigenetic_effects & epigeneticEffectsTes_nomix$effect=="noEnrichment"  ,]$TE))
+
 
 length(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone=="H3K9me3",]$TE))
 
@@ -1584,4 +1590,245 @@ epigeneticEffectsTesALl$length.x <- NULL
 epigeneticEffectsTesALl$length <- epigeneticEffectsTesALl$length.y
 epigeneticEffectsTesALl$length.y <- NULL
 write.table(epigeneticEffectsTesALl$length.y,"FIGURES/epigeneticEffectsTesAll.tab", col.names = T, row.names = F, quote = F, sep = "\t")
+```
+
+Full-length copies
+```{r}
+info_TE_type <- fread("full-length-copies/RESULTS/TE_copy_types.tab", header = F)
+colnames(info_TE_type) <- c("TE", "strainTE", "TEtype")
+epigeneticEffectsTesALlTEtype<-merge(epigeneticEffectsTesALl,info_TE_type,by=c("TE", "strainTE"))
+
+# H3K27ac gut
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K27ac" & epigeneticEffectsTesALlTEtype$effect=="increment"& epigeneticEffectsTesALlTEtype$tissue=="gut",]$TE))
+
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K27ac" & epigeneticEffectsTesALlTEtype$effect=="increment" & epigeneticEffectsTesALlTEtype$TEtype=="fragment"& epigeneticEffectsTesALlTEtype$tissue=="gut",]$TE))
+
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K27ac" & epigeneticEffectsTesALlTEtype$effect=="increment" & epigeneticEffectsTesALlTEtype$TEtype=="full-length" & epigeneticEffectsTesALlTEtype$tissue=="gut",]$TE))
+
+TEs_H3K27ac_gut <- unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K27ac" & epigeneticEffectsTesALlTEtype$effect=="increment"& epigeneticEffectsTesALlTEtype$tissue=="gut", c("TE", "strainTE")])
+
+epigeneticEffectsTesALlTEtype_gut <- unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$tissue=="gut" & epigeneticEffectsTesALlTEtype$effect!="mix" & epigeneticEffectsTesALlTEtype$effect!="noEnrichment",])
+
+epigeneticEffectsTesALlTEtype_gut_no_enrich <- anti_join(epigeneticEffectsTesALlTEtype_gut, TEs_H3K27ac_gut, by = c("TE", "strainTE"))
+length(unique(epigeneticEffectsTesALlTEtype_gut_no_enrich$TE))
+length(unique(epigeneticEffectsTesALlTEtype_gut_no_enrich[epigeneticEffectsTesALlTEtype_gut_no_enrich$TEtype=="fragment",]$TE))
+length(unique(epigeneticEffectsTesALlTEtype_gut_no_enrich[epigeneticEffectsTesALlTEtype_gut_no_enrich$TEtype=="full-length",]$TE))
+
+fisher.test(matrix(c(90,93,264,457),nrow=2))
+prop.test(x=c(90,264), n=c(183,719))
+
+
+```
+
+FBgn0033233	Kdm4A	Lysine demethylase 4A 
+FBgn0053182	Kdm4B	Lysine demethylase 4B 
+FBgn0037703	Kdm3	Lysine demethylase 3 
+FBgn0086908	eggless	[histone H3]-lysine(9) N-trimethyltransferase (2.1.1.355) 
+FBgn0263755	Su(var)3-9	Suppressor of variegation 3-9 
+
+```{r}
+
+expression_level_genes <- fread("expression_level_genes/gene_expression_levels.tab", header = F)
+
+colnames(expression_level_genes) <- c("gene", "id", "method", "TMM", "replicate", "body_part", "strain", "gene_type")
+
+expression_level_genes$gene <- factor(expression_level_genes$gene,levels=c( "eggless", "Su(var)3-9","Kdm3", "Kdm4A", "Kdm4B"))
+expression_level_genes$body_part <- factor(expression_level_genes$body_part, levels=c("head", "gut", "ovary"), labels=c("Head", "Gut", "Ovary"))
+
+expression_level_genes$gene_type <- factor(expression_level_genes$gene_type,levels=c("Methyltransferase", "Demethylase"), labels=c("Methyltransferases", "Demethylases"))
+
+
+ggplot(expression_level_genes, aes(x = body_part, y = log2(TMM))) +
+    geom_boxplot(aes(fill = gene), position = position_dodge(width = 0.75), alpha = 0.5, outlier.shape = NA, width = 0.6) +
+    geom_jitter(aes(color = gene), position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.3)) +
+    facet_grid(. ~ gene_type) + 
+    theme_light(base_size = 18) +
+    theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) +
+  scale_fill_brewer(palette = "Set1")  +
+  scale_color_brewer(palette = "Set1") +
+  labs(fill="Gene", color = "Gene", x =  "Body part", y = "Expression level log2(TMM)")
+
+ggsave(filename = "FIGURES/Figure_S1_2.pdf", width = 8, height = 10)
+save(file="FIGURES/FigS1_2.RData",expression_level_genes)
+wilcox.test( expression_level_genes[expression_level_genes$gene=="eggless" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="eggless" & expression_level_genes$body_part == "Gut",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="eggless" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="eggless" & expression_level_genes$body_part == "Ovary",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Su(var)3-9" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Su(var)3-9" & expression_level_genes$body_part == "Gut",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Su(var)3-9" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Su(var)3-9" & expression_level_genes$body_part == "Ovary",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm3" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm3" & expression_level_genes$body_part == "Gut",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm3" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm3" & expression_level_genes$body_part == "Ovary",]$TMM)
+
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm4A" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm4A" & expression_level_genes$body_part == "Gut",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm4A" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm4A" & expression_level_genes$body_part == "Ovary",]$TMM)
+
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm4B" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm4B" & expression_level_genes$body_part == "Gut",]$TMM)
+
+wilcox.test( expression_level_genes[expression_level_genes$gene=="Kdm4B" & expression_level_genes$body_part == "Head",]$TMM, expression_level_genes[expression_level_genes$gene=="Kdm4B" & expression_level_genes$body_part == "Ovary",]$TMM)
+```
+
+
+Comparison with Siudeja 2021 (gut active TEs)
+The five active TE families (rover, copia, I‐element, diver and F‐element), responsible for 93.8 % of all insertions
+```{r}
+ gut_H3K27ac_increment_TEs <- unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K27ac" & epigeneticEffectsTesALlTEtype$effect=="increment"& epigeneticEffectsTesALlTEtype$tissue=="gut",c("TE","order","family")])
+
+```
+
+In head, TEs are full length when repressed:
+
+```{r}
+# H3K9me3 head
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K9me3" & epigeneticEffectsTesALlTEtype$effect=="increment"& epigeneticEffectsTesALlTEtype$tissue=="head",]$TE))
+
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K9me3" & epigeneticEffectsTesALlTEtype$effect=="increment" & epigeneticEffectsTesALlTEtype$TEtype=="fragment"& epigeneticEffectsTesALlTEtype$tissue=="head",]$TE))
+
+length(unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K9me3" & epigeneticEffectsTesALlTEtype$effect=="increment" & epigeneticEffectsTesALlTEtype$TEtype=="full-length" & epigeneticEffectsTesALlTEtype$tissue=="head",]$TE))
+
+TEs_H3K9me3_head <- unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$histone=="H3K9me3" & epigeneticEffectsTesALlTEtype$effect=="increment"& epigeneticEffectsTesALlTEtype$tissue=="head", c("TE", "strainTE")])
+
+epigeneticEffectsTesALlTEtype_head <- unique(epigeneticEffectsTesALlTEtype[epigeneticEffectsTesALlTEtype$tissue=="head" & epigeneticEffectsTesALlTEtype$effect!="mix" & epigeneticEffectsTesALlTEtype$effect!="noEnrichment",])
+
+epigeneticEffectsTesALlTEtype_head_no_enrich <- anti_join(epigeneticEffectsTesALlTEtype_head, TEs_H3K9me3_head, by = c("TE", "strainTE"))
+length(unique(epigeneticEffectsTesALlTEtype_head_no_enrich$TE))
+length(unique(epigeneticEffectsTesALlTEtype_head_no_enrich[epigeneticEffectsTesALlTEtype_gut_no_enrich$TEtype=="fragment",]$TE))
+length(unique(epigeneticEffectsTesALlTEtype_head_no_enrich[epigeneticEffectsTesALlTEtype_gut_no_enrich$TEtype=="full-length",]$TE))
+
+prop.test(x=c(52,228), n=c(140,404))
+
+```
+
+```{r null distribution}
+
+write.table(unique(epigeneticEffectsTesALlTEtype[,c("TE", "strainTE", "tissue", "effect", "strainBreakpoint","histone")]), file = "null_distribution/DATA/TEs_epigenetics_effects.tab", col.names = F, row.names = F, quote = F, sep = "\t")
+
+write.table(unique(zscoreTMM[,c("TE", "strainTE", "tissue", "effect","histone", "gene", "position", "distance")]), file = "null_distribution/DATA/TEs_epigenetics_effects_genes.tab", col.names = F, row.names = F, quote = F, sep = "\t")
+
+### after running null epigenetics
+
+epigeneticEffectsTes <- fread("epigeneticEffectsTEs.clean.consistent.threshold=1_v3.tab")
+colnames(epigeneticEffectsTes)<-c("TE","strainTE","strainBreakpoint","epigeneticEffect","tissue","histone","type","spread","average","chr","start","end","threshold")
+status<-fread("status.threshold", header = F)
+colnames(status) <- c("TE","tissue","histone", "effect","chr","start","end")
+epigeneticEffectsTes <- merge(epigeneticEffectsTes,status,by=c("TE","tissue","chr","start","end"),all.x = TRUE)
+
+epigeneticEffectsTes[epigeneticEffectsTes$threshold=="consistent_noEnrichment",]$histone.y<-epigeneticEffectsTes[epigeneticEffectsTes$threshold=="consistent_noEnrichment",]$histone.x
+epigeneticEffectsTes[epigeneticEffectsTes$threshold=="consistent_noEnrichment",]$effect<-"noEnrichment"
+epigeneticEffectsTes[epigeneticEffectsTes$threshold=="threshold=1_noEnrichment",]$histone.y<-epigeneticEffectsTes[epigeneticEffectsTes$threshold=="threshold=1_noEnrichment",]$histone.x
+epigeneticEffectsTes[epigeneticEffectsTes$threshold=="threshold=1_noEnrichment",]$effect<-"noEnrichment"
+epigeneticEffectsTes[epigeneticEffectsTes$effect=="mix",]$histone.y<-epigeneticEffectsTes[epigeneticEffectsTes$effect=="mix",]$histone.x
+
+epigeneticEffectsTes$TE_id <- paste0(epigeneticEffectsTes$TE,":",epigeneticEffectsTes$chr,"-",epigeneticEffectsTes$start,"-",epigeneticEffectsTes$end)
+
+# arreglar a mano 
+epigeneticEffectsTes[epigeneticEffectsTes$effect=="depletion" & epigeneticEffectsTes$average>0,]$TE
+epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$average<0,]$TE
+
+# filtrar
+length(unique(epigeneticEffectsTes$TE_id))
+
+TEs_epigenetic_effects <- unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" | epigeneticEffectsTes$effect=="depletion",]$TE_id)
+length(unique(TEs_epigenetic_effects)) # 3194
+
+length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE_id %in% TEs_epigenetic_effects & epigeneticEffectsTes$effect!="mix",]$TE_id)) # 1966
+
+length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE %in% TEs_epigenetic_effects & epigeneticEffectsTes$effect=="mix",]$TE)) # 72
+
+
+## Chi-square
+# TE with effects
+length(unique(epigeneticEffectsTes_real$TE))
+
+TEs_epigenetic_effects_real <- unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment"  | epigeneticEffectsTes_real$effect=="depletion" ,]$TE)
+length(unique(TEs_epigenetic_effects_real))  # 1597
+
+length(unique(epigeneticEffectsTes_real[!epigeneticEffectsTes_real$TE %in% TEs_epigenetic_effects_real & epigeneticEffectsTes_real$effect!="mix" ,]$TE)) # 679
+
+length(unique(epigeneticEffectsTes_real[!epigeneticEffectsTes_real$TE %in% TEs_epigenetic_effects_real & epigeneticEffectsTes_real$effect=="mix",]$TE)) # 41
+
+TEs_epigenetic_effects_real <- unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$frequency==1 | epigeneticEffectsTes_real$effect=="depletion" & epigeneticEffectsTes_real$frequency==1,]$TE)
+length(unique(TEs_epigenetic_effects_real))  # 1556
+
+length(unique(epigeneticEffectsTes_real[!epigeneticEffectsTes_real$TE %in% TEs_epigenetic_effects_real & epigeneticEffectsTes_real$effect!="mix" & epigeneticEffectsTes_real$frequency==1,]$TE)) # 617
+
+length(unique(epigeneticEffectsTes_real[!epigeneticEffectsTes_real$TE %in% TEs_epigenetic_effects_real & epigeneticEffectsTes_real$effect=="mix",]$TE)) # 41
+
+1556+(617-41)
+3194+1894
+chisq.test(matrix(c(1556,576,3194,1894), ncol=2,nrow=2))
+
+# TE show more enrichment
+enrichment_TEs <- epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" ,]$TE_id
+depletion_TEs <- epigeneticEffectsTes[epigeneticEffectsTes$effect=="depletion" ,]$TE_id
+length(unique(intersect(enrichment_TEs,depletion_TEs)))
+
+enrichment_TEs <- epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$frequency==1,]$TE # 1169
+depletion_TEs <- epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="depletion" & epigeneticEffectsTes_real$frequency==1,]$TE # 536
+length(unique(intersect(enrichment_TEs,depletion_TEs))) # 149
+
+
+chisq.test(matrix(c(1169-149,536-149,1436,1368), ncol=2,nrow=2))
+
+# TEs show more enrichment of H3K9me3
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K9me3",]$TE))
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y!="H3K9me3",]$TE))
+
+length(intersect(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K9me3",]$TE),unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y!="H3K9me3",]$TE)))
+
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K27ac",]$TE))
+length(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y!="H3K27ac",]$TE))
+
+length(intersect(unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K27ac",]$TE),unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y!="H3K27ac",]$TE)))
+
+
+length(unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K9me3"& epigeneticEffectsTes_real$frequency==1,]$TE)) # 799
+length(unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone!="H3K9me3"& epigeneticEffectsTes_real$frequency==1,]$TE)) # 572
+
+length(intersect(unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K9me3"& epigeneticEffectsTes_real$frequency==1,]$TE),unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone!="H3K9me3"& epigeneticEffectsTes_real$frequency==1,]$TE))) # 202
+
+length(unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K27ac"& epigeneticEffectsTes_real$frequency==1,]$TE)) # 340
+
+
+#solo h3k9me3
+chisq.test(matrix(c(799-202,572-202,286,587), ncol=2,nrow=2))
+#h3k9me3 general
+chisq.test(matrix(c(799,572,607,908), ncol=2,nrow=2))
+#h3k9me3
+chisq.test(matrix(c(799,2132-799,607,5088-607), ncol=2,nrow=2))
+#h3k27ac
+chisq.test(matrix(c(340,2132-340,652,5088-652), ncol=2,nrow=2))
+
+epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K9me3"& epigeneticEffectsTes_real$frequency==1,]$spread 
+
+# compare spread and avg
+epigeneticEffectsTes_real_increment_H3K9me3 <- unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K9me3"& epigeneticEffectsTes_real$frequency==1, c("TE", "spread", "average","tissue","histone","effect")])
+
+epigeneticEffectsTes_real_increment_H3K27ac <- unique(epigeneticEffectsTes_real[epigeneticEffectsTes_real$effect=="increment" & epigeneticEffectsTes_real$histone=="H3K27ac"& epigeneticEffectsTes_real$frequency==1, c("TE", "spread", "average","tissue","histone","effect")])
+
+epigeneticEffectsTes_increment_H3K9me3  <- unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K9me3",  c("TE", "spread", "average","tissue","histone.y","effect","chr","start","end")])
+
+epigeneticEffectsTes_increment_H3K27ac  <- unique(epigeneticEffectsTes[epigeneticEffectsTes$effect=="increment" & epigeneticEffectsTes$histone.y=="H3K27ac",  c("TE", "spread", "average","tissue","histone.y","effect","chr","start","end")])
+
+wilcox.test(epigeneticEffectsTes_real_increment_H3K9me3$spread, epigeneticEffectsTes_increment_H3K9me3$spread)
+wilcox.test(epigeneticEffectsTes_real_increment_H3K9me3$average, epigeneticEffectsTes_increment_H3K9me3$average)
+
+wilcox.test(epigeneticEffectsTes_real_increment_H3K27ac$spread, epigeneticEffectsTes_increment_H3K27ac$spread)
+wilcox.test(epigeneticEffectsTes_real_increment_H3K27ac$average, epigeneticEffectsTes_increment_H3K27ac$average)
+
+
+#write.table(epigeneticEffectsTes, "epigeneticEffectsTesParsed_v3.tab", col.names = T, row.names = F, quote = F, sep="\t")
+#epigeneticEffectsTes <-  subset(epigeneticEffectsTes, select = -c(histone.x, type))
+
+```
+
+```{r}
+epigeneticEffectsTesInfoLength_gut_enrichment_H3K27ac <- epigeneticEffectsTesInfoLength %>% filter(tissue == "gut", effect == "increment", histone == "H3K27ac") %>%  select(TE,family) %>% unique()
+
+sort(table(epigeneticEffectsTesInfoLength_gut_enrichment_H3K27ac$family))
 ```
