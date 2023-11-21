@@ -5,9 +5,10 @@ Scripts and data for the manuscript "The epigenetics effects of transposable ele
 
 ## Directories and files
 - **TEs with epigenetic effects data**: contains table for the 2,235 polymorphic TEs analyzed
-- **epigenetic_effects**: ad-hoc bash scripts to analyze the epigenetic effects of TEs
-- **expression analyses**: ad-hoc bash and R scripts to compute the z-score comparing gene expression between alleles with and without the TE insertion
-- **obtain-breakpoints**: scripts to obtain the breakpoint coordinate for TEs absent from genomes
+- **Epigenetic effects**: ad-hoc bash scripts to analyze the epigenetic effects of TEs
+- **Expression analyses**: ad-hoc bash and R scripts to compute the z-score comparing gene expression between alleles with and without the TE insertion
+- **Obtain breakpoints**: scripts to obtain the breakpoint coordinate for TEs absent from genomes
+- **Null distribution**: script to select random regions of the genome that matches the location of TE insertions
 - **ANALYSES_EPIGENETICS.Rmd**: R Markdown documents with the code used for doing analyses and creating figures
 
 ## Citation
