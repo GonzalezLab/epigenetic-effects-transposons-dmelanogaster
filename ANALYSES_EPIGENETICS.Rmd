@@ -738,6 +738,71 @@ mutate(freq = n / nAll)
     theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Superfamily", fill="Order", title="TEs inducing bivalent enrichment") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
     c
     
+    
+      ### figure S3 for depletion
+      freqDepletionH3K9me3superfamily <- TEinfo2235 %>% dplyr::select(superfamily,order,class,depletionH3K9me3) %>%
+    group_by(superfamily) %>%
+    summarise(nAll=n(), n = sum(depletionH3K9me3==1), order=unique(order),class=unique(class)) %>%
+mutate(freq = n / nAll)
+      
+library(tidytext)
+ a2<-   ggplot(freqDepletionH3K9me3superfamily[freqDepletionH3K9me3superfamily$superfamily!="INE-1",], aes(x=reorder(superfamily, freq), y=freq, fill=order)) + geom_col(alpha=0.7)+
+    geom_text(
+        aes(x = superfamily, y = 0, label = paste0(n,"/",nAll)),
+        hjust = -0.1,    angle = 90, size = 3
+    ) + theme_light() + scale_fill_canva(palette = "Cool and calm")  +  
+    theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Superfamily", fill="Order", title="TEs inducing the depletion of H3K9me3") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    a2
+    
+      freqDepletionH3K27acsuperfamily <- TEinfo2235 %>% dplyr::select(superfamily,order,class,depletionH3K27ac) %>%
+    group_by(superfamily) %>%
+    summarise(nAll=n(), n = sum(depletionH3K27ac==1), order=unique(order),class=unique(class)) %>%
+mutate(freq = n / nAll)
+      
+          
+      freqDepletionBivalentsuperfamily <- TEinfo2235 %>% dplyr::select(superfamily,order,class,depletionBivalent) %>%
+    group_by(superfamily) %>%
+    summarise(nAll=n(), n = sum(depletionBivalent==1), order=unique(order),class=unique(class)) %>%
+mutate(freq = n / nAll)
+      
+  freqDepletionH3K27ac<- TEinfo2235 %>% dplyr::select(superfamily,family,order,class,depletionH3K27ac) %>%
+    group_by(family) %>%
+    summarise(nAll=n(), n = sum(depletionH3K27ac==1), order=unique(order),class=unique(class)) %>%
+    mutate(freq = n / nAll)
+
+  ggplot(freqDepletionH3K27ac, aes(x=reorder(family, freq), y=freq, fill=order)) + geom_col()+
+    geom_text(
+        aes(x = family, y = 0, label = paste0(n,"/",nAll)),
+        hjust = -0.1,    angle = 90, size = 3
+    ) + theme_light() + scale_fill_tableau()  +  
+    theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),,labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Family", fill="Order") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+    ggplot(freqDepletionH3K27acsuperfamily, aes(x=reorder(superfamily, freq), y=freq, fill=order)) + geom_col()+
+    geom_text(
+        aes(x = superfamily, y = 0, label = paste0(n,"/",nAll)),
+        hjust = -0.1,    angle = 90, size = 3
+    ) + theme_light() + scale_fill_tableau()  +  
+    theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Superfamily", fill="Order") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    
+     b2<-   ggplot(freqDepletionH3K27acsuperfamily[freqDepletionH3K27acsuperfamily$superfamily!="INE-1",], aes(x=reorder(superfamily, freq), y=freq, fill=order)) + geom_col(alpha=0.7)+
+    geom_text(
+        aes(x = superfamily, y = 0, label = paste0(n,"/",nAll)),
+        hjust = -0.1,    angle = 90, size = 3
+    ) + theme_light() + scale_fill_canva(palette = "Cool and calm")  +  
+    theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Superfamily", fill="Order", title="TEs inducing the depletion of H3K27ac") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    b2
+
+       c2<-   ggplot(freqDepletionBivalentsuperfamily[freqDepletionBivalentsuperfamily$superfamily!="INE-1",], aes(x=reorder(superfamily, freq), y=freq, fill=order)) + geom_col(alpha=0.7)+
+    geom_text(
+        aes(x = superfamily, y = 0, label = paste0(n,"/",nAll)),
+        hjust = -0.1,    angle = 90, size = 3
+    ) + theme_light() + scale_fill_canva(palette = "Cool and calm")  +  
+    theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "dashed"), panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold"))  + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 5),labels = function(x) paste0(x*100, "%")) + labs(y="Proportion of TEs with epigenetic effects", x = "Superfamily", fill="Order", title="TEs inducing bivalent depletion") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    c2
+ 
+    ggsave("FIGURES/Figure_S3_new.pdf",ggarrange(a,b,c,a2,b2,c2, ncol=3, nrow=2, common.legend = TRUE, legend="bottom", labels=c("A","B","C","D","E","F")),width = 15, height = 10)
+save(file="FIGURES/Figure_S3_new.RData", a,b,c,a2,b2,c2)
+
     epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$order=="TRIM",]$order<-"LTR"
     
   epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$tissue=="head",]$tissue<-"Head"
@@ -1390,50 +1455,172 @@ ggplot(TEinfo2235, aes(x=superfamily,fill=depletionH3K27ac)) + geom_bar(position
     freqEnrichmentBivalent_filter[TE,]$sign<- sign
   }
   
+  freqEnrichmentH3K9me3_filter$q.value <- p.adjust(freqEnrichmentH3K9me3_filter$p.value,method = "fdr")
+  
   freqEnrichmentH3K9me3_filter$histone <- "H3K9me3"
   freqEnrichmentH3K9me3_filter$fill <- "ns"
-  freqEnrichmentH3K9me3_filter[freqEnrichmentH3K9me3_filter$sign=="+" & freqEnrichmentH3K9me3_filter$p.value < 0.05,]$fill <- "sign_pos"
-  freqEnrichmentH3K9me3_filter[freqEnrichmentH3K9me3_filter$sign=="-" & freqEnrichmentH3K9me3_filter$p.value < 0.05,]$fill <- "sign_neg"
+  freqEnrichmentH3K9me3_filter[freqEnrichmentH3K9me3_filter$sign=="+" & freqEnrichmentH3K9me3_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqEnrichmentH3K9me3_filter[freqEnrichmentH3K9me3_filter$sign=="-" & freqEnrichmentH3K9me3_filter$q.value < 0.05,]$fill <- "sign_neg"
   freqEnrichmentH3K9me3_filter$fill <- factor(freqEnrichmentH3K9me3_filter$fill, level=c("sign_pos","ns","sign_neg"))
   lvls <- freqEnrichmentH3K9me3_filter$family[order(freqEnrichmentH3K9me3_filter$fill,-freqEnrichmentH3K9me3_filter$freq)]
   freqEnrichmentH3K9me3_filter$family <- factor(freqEnrichmentH3K9me3_filter$family, levels=lvls)
 
 
 a<-ggplot(freqEnrichmentH3K9me3_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
-    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", linewidth = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="Family", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 0.35) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =0.35 ,label="Mean H3K9me3 enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", linewidth = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="Family", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 816/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =816/2235 ,label="Mean H3K9me3 enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+
+  freqEnrichmentH3K27ac_filter$q.value <- p.adjust(freqEnrichmentH3K27ac_filter$p.value,method = "fdr")
 
 freqEnrichmentH3K27ac_filter$histone <- "H3K27ac"
   freqEnrichmentH3K27ac_filter$fill <- "ns"
-  freqEnrichmentH3K27ac_filter[freqEnrichmentH3K27ac_filter$sign=="+" & freqEnrichmentH3K27ac_filter$p.value < 0.05,]$fill <- "sign_pos"
-  freqEnrichmentH3K27ac_filter[freqEnrichmentH3K27ac_filter$sign=="-" & freqEnrichmentH3K27ac_filter$p.value < 0.05,]$fill <- "sign_neg"
+  freqEnrichmentH3K27ac_filter[freqEnrichmentH3K27ac_filter$sign=="+" & freqEnrichmentH3K27ac_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqEnrichmentH3K27ac_filter[freqEnrichmentH3K27ac_filter$sign=="-" & freqEnrichmentH3K27ac_filter$q.value < 0.05,]$fill <- "sign_neg"
   freqEnrichmentH3K27ac_filter$fill <- factor(freqEnrichmentH3K27ac_filter$fill, level=c("sign_pos","ns","sign_neg"))
   lvls <- freqEnrichmentH3K27ac_filter$family[order(freqEnrichmentH3K27ac_filter$fill,-freqEnrichmentH3K27ac_filter$freq)]
   freqEnrichmentH3K27ac_filter$family <- factor(freqEnrichmentH3K27ac_filter$family, levels=lvls)
   
 b<-ggplot(freqEnrichmentH3K27ac_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
-    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 0.148) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =0.148 ,label="Mean H3K27ac enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 345/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =345/2235 ,label="Mean H3K27ac enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
 
 
+  freqEnrichmentBivalent_filter$q.value <- p.adjust(freqEnrichmentBivalent_filter$p.value,method = "fdr")
 
 freqEnrichmentBivalent_filter$histone <- "Bivalent"
   freqEnrichmentBivalent_filter$fill <- "ns"
-  freqEnrichmentBivalent_filter[freqEnrichmentBivalent_filter$sign=="+" & freqEnrichmentBivalent_filter$p.value < 0.05,]$fill <- "sign_pos"
-  freqEnrichmentBivalent_filter[freqEnrichmentBivalent_filter$sign=="-" & freqEnrichmentBivalent_filter$p.value < 0.05,]$fill <- "sign_neg"
+  freqEnrichmentBivalent_filter[freqEnrichmentBivalent_filter$sign=="+" & freqEnrichmentBivalent_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqEnrichmentBivalent_filter[freqEnrichmentBivalent_filter$sign=="-" & freqEnrichmentBivalent_filter$q.value < 0.05,]$fill <- "sign_neg"
   freqEnrichmentBivalent_filter$fill <- factor(freqEnrichmentBivalent_filter$fill, level=c("sign_pos","ns","sign_neg"))
   lvls <- freqEnrichmentBivalent_filter$family[order(freqEnrichmentBivalent_filter$fill,-freqEnrichmentBivalent_filter$freq)]
   freqEnrichmentBivalent_filter$family <- factor(freqEnrichmentBivalent_filter$family, levels=lvls)
   
 c<-ggplot(freqEnrichmentBivalent_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
-    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 0.13) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y = 0.13 ,label="Mean bivalent enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 304/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y = 304/2235 ,label="Mean bivalent enrichment",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
 
 ggarrange(a,b,c, ncol=3, nrow=1, common.legend = TRUE, legend="bottom", labels=c("A","B","C"))
 
-ggsave("FIGURES/Figure_4.pdf", plot = ggarrange(a+ggtitle("H3K9me3 enrichment"),b+ggtitle("H3K27ac enrichment"),c+ggtitle("Bivalent enrichment"), ncol=3, nrow=1, common.legend = TRUE, legend="bottom", labels=c("A","B","C")), width = 9, height = 6)
-save(file="FIGURES/Figure_4.RData", a, b, c, freqEnrichmentBivalent_filter, freqEnrichmentH3K27ac_filter, freqEnrichmentH3K9me3_filter)
+ggsave("FIGURES/Figure_4_REV_qval.pdf", plot = ggarrange(a+ggtitle("H3K9me3 enrichment"),b+ggtitle("H3K27ac enrichment"),c+ggtitle("Bivalent enrichment"), ncol=3, nrow=1, common.legend = TRUE, legend="bottom", labels=c("A","B","C")), width = 9, height = 6)
+save(file="FIGURES/Figure_4_REV_qval.RData", a, b, c, freqEnrichmentBivalent_filter, freqEnrichmentH3K27ac_filter, freqEnrichmentH3K9me3_filter)
 
-write.table(rbind(freqEnrichmentH3K9me3_filter,freqEnrichmentH3K27ac_filter,freqEnrichmentBivalent_filter),file = "FIGURES/Figure_4_data.tsv", col.names = T, row.names = F, quote = F, sep = "\t")
+write.table(rbind(freqEnrichmentH3K9me3_filter,freqEnrichmentH3K27ac_filter,freqEnrichmentBivalent_filter),file = "FIGURES/Figure_4_REV_data_qval.tsv", col.names = T, row.names = F, quote = F, sep = "\t")
 
 ```
+
+```{r analysis-depletion}
+
+  freqDepletionH3K9me3 <- TEinfo2235 %>% dplyr::select(superfamily,family,order,class,depletionH3K9me3) %>%
+    group_by(family) %>%
+    summarise(nAll=n(), n = sum(depletionH3K9me3==1), order=unique(order),class=unique(class)) %>%
+    mutate(freq = n / nAll)
+  
+  freqDepletionH3K9me3$p.value  <- 0
+  freqDepletionH3K9me3$sign <- ""
+  
+  freqDepletionH3K9me3_filter <- freqDepletionH3K9me3[freqDepletionH3K9me3$nAll>=20 & freqDepletionH3K9me3$n>7,]
+  for ( TE in 1:nrow(freqDepletionH3K9me3_filter )) {
+    freqDepletionH3K9me3_filter[TE,2]
+    freqDepletionH3K9me3_filter[TE,3]
+    p_value <- prop.test(x = c(pull(freqDepletionH3K9me3_filter[TE,3]), 200), n = c(pull(freqDepletionH3K9me3_filter[TE,2]), 2235))$p.value
+        #p_value <- chisq.test(matrix(c(pull(freqEnrichmentH3K9me3_filter[TE,3]), 816, pull(freqEnrichmentH3K9me3_filter[TE,2]), 2235),ncol = 2))$p.value
+
+    sign <- ifelse(prop.test(x = c(pull(freqDepletionH3K9me3_filter[TE,3]), 200), n = c(pull(freqDepletionH3K9me3_filter[TE,2]), 2235))$estimate[1] > 200/2235, "+", "-")
+    freqDepletionH3K9me3_filter[TE,]$p.value<- p_value
+    freqDepletionH3K9me3_filter[TE,]$sign<- sign
+  }
+  
+  
+    freqDepletionH3K27ac <- TEinfo2235 %>% dplyr::select(superfamily,family,order,class,depletionH3K27ac) %>%
+    group_by(family) %>%
+    summarise(nAll=n(), n = sum(depletionH3K27ac==1), order=unique(order),class=unique(class)) %>%
+    mutate(freq = n / nAll)
+  
+  freqDepletionH3K27ac$p.value  <- 0
+  freqDepletionH3K27ac$sign <- ""
+  
+  freqDepletionH3K27ac_filter <- freqDepletionH3K27ac[freqDepletionH3K27ac$nAll>=20 & freqDepletionH3K27ac$n>7,]
+  for ( TE in 1:nrow(freqDepletionH3K27ac_filter )) {
+    freqDepletionH3K27ac_filter[TE,2]
+    freqDepletionH3K27ac_filter[TE,3]
+    p_value <- prop.test(x = c(pull(freqDepletionH3K27ac_filter[TE,3]), 223), n = c(pull(freqDepletionH3K27ac_filter[TE,2]), 2235))$p.value
+    #p_value <- chisq.test(matrix(c(pull(freqDepletionH3K27ac_filter[TE,3]), 345, pull(freqDepletionH3K27ac_filter[TE,2]), 2235),ncol = 2))$p.value
+    sign <- ifelse(prop.test(x = c(pull(freqDepletionH3K27ac_filter[TE,3]), 223), n = c(pull(freqDepletionH3K27ac_filter[TE,2]), 2235))$estimate[1] > 223/2235, "+", "-")
+    freqDepletionH3K27ac_filter[TE,]$p.value<- p_value
+    freqDepletionH3K27ac_filter[TE,]$sign<- sign
+  }
+  
+    
+    freqDepletionBivalent <- TEinfo2235 %>% dplyr::select(superfamily,family,order,class,depletionBivalent) %>%
+    group_by(family) %>%
+    summarise(nAll=n(), n = sum(depletionBivalent==1), order=unique(order),class=unique(class)) %>%
+    mutate(freq = n / nAll)
+  
+  freqDepletionBivalent$p.value  <- 0
+  freqDepletionBivalent$sign <- ""
+  
+  freqDepletionBivalent_filter <- freqDepletionBivalent[freqDepletionBivalent$nAll>=20 & freqDepletionBivalent$n>7,]
+  for ( TE in 1:nrow(freqDepletionBivalent_filter )) {
+    freqDepletionBivalent_filter[TE,2]
+    freqDepletionBivalent_filter[TE,3]
+    p_value <- prop.test(x = c(pull(freqDepletionBivalent_filter[TE,3]), 178), n = c(pull(freqDepletionBivalent_filter[TE,2]), 2235))$p.value
+        #p_value <- chisq.test(matrix(c(pull(freqDepletionBivalent_filter[TE,3]), 304, pull(freqDepletionBivalent_filter[TE,2]), 2235),ncol = 2))$p.value
+
+    sign <- ifelse(prop.test(x = c(pull(freqDepletionBivalent_filter[TE,3]), 178), n = c(pull(freqDepletionBivalent_filter[TE,2]), 2235))$estimate[1] > 178/2235, "+", "-")
+    freqDepletionBivalent_filter[TE,]$p.value<- p_value
+    freqDepletionBivalent_filter[TE,]$sign<- sign
+  }
+  
+    freqDepletionH3K9me3_filter$q.value <- p.adjust(freqDepletionH3K9me3_filter$p.value,method = "fdr")
+
+    
+  freqDepletionH3K9me3_filter$histone <- "H3K9me3"
+  freqDepletionH3K9me3_filter$fill <- "ns"
+  freqDepletionH3K9me3_filter[freqDepletionH3K9me3_filter$sign=="+" & freqDepletionH3K9me3_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqDepletionH3K9me3_filter[freqDepletionH3K9me3_filter$sign=="-" & freqDepletionH3K9me3_filter$q.value < 0.05,]$fill <- "sign_neg"
+  freqDepletionH3K9me3_filter$fill <- factor(freqDepletionH3K9me3_filter$fill, level=c("sign_pos","ns","sign_neg"))
+  lvls <- freqDepletionH3K9me3_filter$family[order(freqDepletionH3K9me3_filter$fill,-freqDepletionH3K9me3_filter$freq)]
+  freqDepletionH3K9me3_filter$family <- factor(freqDepletionH3K9me3_filter$family, levels=lvls)
+
+
+a<-ggplot(freqDepletionH3K9me3_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", linewidth = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="Family", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60",ns="gray80","#1D89E4")) + geom_hline(yintercept = 200/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =200/2235 ,label="Mean H3K9me3 depletion",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+
+    freqDepletionH3K27ac_filter$q.value <- p.adjust(freqDepletionH3K27ac_filter$p.value,method = "fdr")
+
+    
+freqDepletionH3K27ac_filter$histone <- "H3K27ac"
+  freqDepletionH3K27ac_filter$fill <- "ns"
+  freqDepletionH3K27ac_filter[freqDepletionH3K27ac_filter$sign=="+" & freqDepletionH3K27ac_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqDepletionH3K27ac_filter[freqDepletionH3K27ac_filter$sign=="-" & freqDepletionH3K27ac_filter$q.value < 0.05,]$fill <- "sign_neg"
+  freqDepletionH3K27ac_filter$fill <- factor(freqDepletionH3K27ac_filter$fill, level=c("sign_pos","ns","sign_neg"))
+  lvls <- freqDepletionH3K27ac_filter$family[order(freqDepletionH3K27ac_filter$fill,-freqDepletionH3K27ac_filter$freq)]
+  freqDepletionH3K27ac_filter$family <- factor(freqDepletionH3K27ac_filter$family, levels=lvls)
+  
+b<-ggplot(freqDepletionH3K27ac_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60","gray80","#1D89E4")) + geom_hline(yintercept = 223/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y =223/2235 ,label="Mean H3K27ac depletion",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+
+
+    freqDepletionBivalent_filter$q.value <- p.adjust(freqDepletionBivalent_filter$p.value,method = "fdr")
+
+freqDepletionBivalent_filter$histone <- "Bivalent"
+  freqDepletionBivalent_filter$fill <- "ns"
+  freqDepletionBivalent_filter[freqDepletionBivalent_filter$sign=="+" & freqDepletionBivalent_filter$q.value < 0.05,]$fill <- "sign_pos"
+  freqDepletionBivalent_filter[freqDepletionBivalent_filter$sign=="-" & freqDepletionBivalent_filter$q.value < 0.05,]$fill <- "sign_neg"
+  freqDepletionBivalent_filter$fill <- factor(freqDepletionBivalent_filter$fill, level=c("sign_pos","ns","sign_neg"))
+  lvls <- freqDepletionBivalent_filter$family[order(freqDepletionBivalent_filter$fill,-freqDepletionBivalent_filter$freq)]
+  freqDepletionBivalent_filter$family <- factor(freqDepletionBivalent_filter$family, levels=lvls)
+  
+c<-ggplot(freqDepletionBivalent_filter, aes(x=family, y = freq, fill=fill)) + geom_col() + coord_flip() +     scale_x_discrete(limits=rev) + theme_light() +  
+    theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_line(colour="grey90", size = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + scale_y_continuous(labels = function(x) paste0(x*100, "%"), expand = c(0,0)) + labs(x="", y= "Frequency", fill="Type") + scale_fill_manual(values=c("#D81A60",ns="gray80","#1D89E4")) + geom_hline(yintercept = 178/2235) + geom_text(aes(y=0.01, label = order), hjust=0, size=2.5) + guides(fill="none") + annotate(geom = "text", x = 1, y = 178/2235 ,label="Mean bivalent depletion",  angle = 90, size=3, hjust = 0, vjust=-1.5)  
+
+ggarrange(a,b,c, ncol=3, nrow=1, common.legend = TRUE, legend="bottom", labels=c("A","B","C"))
+
+ggsave("FIGURES/Figure_4_DEPLETION.pdf", plot = ggarrange(a+ggtitle("H3K9me3 depletion"),b+ggtitle("H3K27ac depletion"),c+ggtitle("Bivalent depletion"), ncol=3, nrow=1, common.legend = TRUE, legend="bottom", labels=c("A","B","C")), width = 9, height = 6)
+save(file="FIGURES/Figure_4_DEPLETION.RData", a, b, c, freqDepletionBivalent_filter, freqDepletionH3K27ac_filter, freqDepletionH3K9me3_filter)
+
+write.table(rbind(freqDepletionH3K9me3_filter,freqDepletionH3K27ac_filter,freqDepletionBivalent_filter),file = "FIGURES/Figure_4_DEPLETION_data.tsv", col.names = T, row.names = F, quote = F, sep = "\t")
+
+
+```
+
 
 ```{r GO}
 tissues <- c("head", "gut", "ovary")
