@@ -50,6 +50,12 @@ Analysis with all TEs (4,823 TEs).
 TEtrack <- fread("intersectTEsWindowsSignalValueTrack.sort.bed")
 tmpTE <- TEtrack  %>%  dplyr::select(V1,V4,V8,V9,V14,V15,V16,V17)
 colnames(tmpTE) <- c("chr","TE", "position", "type","signalValue","tissue","strain","histone")
+############################################
+# remove AKA and JUT in head for the reviewer
+tmpTE2 <- tmpTE[!(tmpTE$strain=="JUT-011" & tmpTE$tissue=="head"),]
+tmpTE2 <- tmpTE2[!(tmpTE2$strain=="AKA-017" & tmpTE2$tissue=="head"),]
+############################################
+
 dfPlot <- tmpTE
 dfPlot <- dfPlot[dfPlot$position!="TE",]
 dfPlot$position <- factor(dfPlot$position, levels=c("-20kb", "-19kb", "-18kb", "-17kb", "-16kb", "-15kb", "-14kb", "-13kb", "-12kb", "-11kb", "-10kb", "-9kb", "-8kb", "-7kb", "-6kb", "-5kb", "-4kb", "-3kb", "-2kb", "-1kb", "1kb", "2kb", "3kb", "4kb", "5kb", "6kb", "7kb", "8kb", "9kb", "10kb", "11kb", "12kb", "13kb", "14kb", "15kb", "16kb", "17kb", "18kb", "19kb", "20kb"))
@@ -87,6 +93,33 @@ theme(panel.grid.minor.x = element_line(colour="grey90", size=0.5, linetype = "d
 figure_s1
 ggsave("FIGURES/Figure_S1.pdf", plot = figure_s1, width = 10, height = 10)
 save(file="FIGURES/Figure_S1.RData", figure_s1, dfPlotMedian)
+```
+
+```{r}
+dfPlot <- tmpTE2
+dfPlot <- dfPlot[dfPlot$position!="TE",]
+dfPlot$position <- factor(dfPlot$position, levels=c("-20kb", "-19kb", "-18kb", "-17kb", "-16kb", "-15kb", "-14kb", "-13kb", "-12kb", "-11kb", "-10kb", "-9kb", "-8kb", "-7kb", "-6kb", "-5kb", "-4kb", "-3kb", "-2kb", "-1kb", "1kb", "2kb", "3kb", "4kb", "5kb", "6kb", "7kb", "8kb", "9kb", "10kb", "11kb", "12kb", "13kb", "14kb", "15kb", "16kb", "17kb", "18kb", "19kb", "20kb"))
+dfPlotMedian <- dfPlot %>% group_by(position,type,tissue,histone) %>% summarise(meanSV = median(signalValue))
+#dfPlotMedian <- dfPlot %>% group_by(position,type,tissue,strain,histone) %>% summarise(meanSV = median(signalValue))
+dfPlotMedian$windows <- c(rev(rep(paste0("-",seq(1,20,1)),each=6)),rep(seq(1,20,1),each=6))
+#dfPlotMedian$windows <- c(rev(rep(paste0("-",seq(1,20,1)),each=30)),rep(seq(1,20,1),each=30))
+dfPlotMedian$windows <- as.integer(dfPlotMedian$windows)
+
+write.table(dfPlotMedian, "epigenetic_landscapes/dfPlotMedian.allTE.removeHeadAKAandJUT.tsv", quote = F, sep = "\t", row.names = F, col.names = T)
+
+dfPlotMedian[dfPlotMedian$tissue=="head",]$tissue<-"Head"
+dfPlotMedian[dfPlotMedian$tissue=="gut",]$tissue<-"Gut"
+dfPlotMedian[dfPlotMedian$tissue=="ovary",]$tissue<-"Ovary"
+dfPlotMedian$tissue <- factor(dfPlotMedian$tissue,levels = c("Head","Gut","Ovary"))
+dfPlotMedian$histone <- factor(dfPlotMedian$histone,levels = c("H3K9me3","H3K27ac"))
+
+figure1_a <- ggplot(dfPlotMedian, aes(x=windows,y=meanSV)) + geom_vline(aes(xintercept=0), color="grey30")  + geom_smooth(method="loess", span = 0.1, aes(color=tissue))  +
+theme_light(base_size = 18) + scale_color_tableau() + labs(x="Distance to the TE (kb)", y = paste0("Median histone fold enrichment"), color="Body part")   + scale_y_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 10)) + scale_x_continuous(breaks = c(-20,-15,-10,-5,0,5,10,15,20), labels=c("-20","-15","-10","-5","TE","5","10","15","20"), minor_breaks = seq(-20, 20, 1)) +  
+theme(panel.grid.minor.x = element_line(colour="grey90", linewidth=0.5, linetype = "dashed"), panel.grid.major.x = element_line(colour="grey90", linewidth = 0.5,linetype = "dashed"), panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank(), axis.text = element_text(colour = "black"), axis.title = element_text(face = "bold")) + facet_grid(.~histone) +
+  theme(legend.position = "bottom")
+figure1_a
+ggsave(plot=figure1_a, filename="../FIGURES/Figure_1A_noHeadAKA-JUT.pdf"
+       
 ```
 
 Analysis with the TEs that are polymorphic and non-nested: 2,325.
@@ -424,6 +457,7 @@ ggplot(type_epigenetic_effects, aes(x=tissue,y=n,fill=type)) + geom_col() +
     geom_text(aes(label = n),
               position = position_stack(vjust = .5), color="white")
 
+ggsave("FIGURES/Figure_S7.pdf", width = 8, height = 6)
 
 increment_H3K9me3_TE_list <- epigeneticEffectsTes %>% filter(
                                 effect == "increment",
@@ -987,49 +1021,110 @@ length(unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$effect=="increm
 
 ```
 
+```{r length-distribution-r01}
+
+# All TEs - H3K9me3 enrichment
+length(unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$histone=="H3K9me3",]$TE)) # 816 
+
+summary(unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$histone=="H3K9me3",c("TE","length")])$length)
+
+length(unique(zscoreTMM[zscoreTMM$effect=="increment" & zscoreTMM$histone=="H3K9me3" &  zscoreTMM$pvalueF=="Significant",]$TE)) # 340 
+
+summary(unique(zscoreTMM[zscoreTMM$effect=="increment" & zscoreTMM$histone=="H3K9me3"  &  zscoreTMM$pvalueF=="Significant",c("TE","length")])$length)
+
+wilcox.test(unique(zscoreTMM[zscoreTMM$effect=="increment" & zscoreTMM$histone=="H3K9me3"  &  zscoreTMM$pvalueF=="Significant",c("TE","length")])$length, unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$histone=="H3K9me3",c("TE","length")])$length)
+
+# Define parameters
+histones <- c("H3K9me3", "H3K27ac", "bivalent")
+effects <- c("increment", "depletion")
+
+# Loop through histone marks and effects
+for (h in histones) {
+  for (e in effects) {
+    h<-"bivalent"
+    # Extract unique TEs from epigeneticEffectsTesInfo
+    epigenetic_TEs <- unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect == e & 
+                                                      epigeneticEffectsTesInfo$histone == h, c("TE", "length")])
+    
+    if (h == "bivalent"){
+      h<-"Bivalent"
+    }
+    # Extract unique TEs from zscoreTMM (Significant only)
+    significant_TEs <- unique(zscoreTMM[zscoreTMM$effect == e & 
+                                        zscoreTMM$histone == h & 
+                                        zscoreTMM$pvalueF == "Significant", c("TE", "length")])
+    
+    # Count of unique TEs
+    cat("\n# Histone:", h, "- Effect:", e, "\n")
+    cat("Total unique TEs in epigeneticEffectsTesInfo:", length(unique(epigenetic_TEs$TE)), "\n")
+    cat("Total unique TEs in zscoreTMM (Significant only):", length(unique(significant_TEs$TE)), "\n")
+    
+    # Summary of lengths
+    cat("\nSummary of TE lengths in epigeneticEffectsTesInfo:\n")
+    print(summary(epigenetic_TEs$length))
+    
+    cat("\nSummary of TE lengths in zscoreTMM (Significant only):\n")
+    print(summary(significant_TEs$length))
+    
+    # Wilcoxon test for length distributions
+    wilcox_result <- wilcox.test(significant_TEs$length, epigenetic_TEs$length)
+    
+    cat("\nWilcoxon test p-value:", wilcox_result$p.value, "\n")
+    cat("------------------------------------------------------------\n")
+  }
+}
+
+
+```
+
+
 Test position
 ```{r}
-zscoreTMM_H3K9me3_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+zscoreTMM$position3 <- zscoreTMM$position
+zscoreTMM$position3 <- factor(zscoreTMM$position3,levels=c("Upstream", "UTR", "CDS", "Intron", "Downstream"))
+zscoreTMM[zscoreTMM$position=="5'UTR" | zscoreTMM$position=="3'UTR",]$position3 <- "UTR"
 
-chisq.test(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF, correct=T)
-table(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF)
+zscoreTMM_H3K9me3_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_enrich$position2, zscoreTMM_H3K9me3_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_H3K9me3_enrich$position3, zscoreTMM_H3K9me3_enrich$zscoreF, correct=T)
+table(zscoreTMM_H3K9me3_enrich$position3, zscoreTMM_H3K9me3_enrich$zscoreF)
 
-zscoreTMM_H3K9me3_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_enrich$position3, zscoreTMM_H3K9me3_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
-chisq.test(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF, correct=T)
-table(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF)
+zscoreTMM_H3K9me3_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K9me3" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_deplete$position2, zscoreTMM_H3K9me3_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_H3K9me3_deplete$position3, zscoreTMM_H3K9me3_deplete$zscoreF, correct=T)
+table(zscoreTMM_H3K9me3_deplete$position3, zscoreTMM_H3K9me3_deplete$zscoreF)
 
-zscoreTMM_H3K27ac_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K9me3_deplete$position3, zscoreTMM_H3K9me3_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
-chisq.test(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF, correct=T)
-table(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF)
+zscoreTMM_H3K27ac_enrich <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_enrich$position2, zscoreTMM_H3K27ac_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_H3K27ac_enrich$position3, zscoreTMM_H3K27ac_enrich$zscoreF, correct=T)
+table(zscoreTMM_H3K27ac_enrich$position3, zscoreTMM_H3K27ac_enrich$zscoreF)
 
-zscoreTMM_H3K27ac_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_enrich$position3, zscoreTMM_H3K27ac_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
-chisq.test(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF, correct=T)
-table(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF)
+zscoreTMM_H3K27ac_deplete <- unique(zscoreTMM[zscoreTMM$histone=="H3K27ac" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_deplete$position2, zscoreTMM_H3K27ac_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_H3K27ac_deplete$position3, zscoreTMM_H3K27ac_deplete$zscoreF, correct=T)
+table(zscoreTMM_H3K27ac_deplete$position3, zscoreTMM_H3K27ac_deplete$zscoreF)
 
-zscoreTMM_Bivalent_enrich <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+chisq.posthoc.test(as.matrix(table(zscoreTMM_H3K27ac_deplete$position3, zscoreTMM_H3K27ac_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
-chisq.test(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF, correct=T)
-table(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF)
+zscoreTMM_Bivalent_enrich <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg>0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_enrich$position2, zscoreTMM_Bivalent_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_Bivalent_enrich$position3, zscoreTMM_Bivalent_enrich$zscoreF, correct=T)
+table(zscoreTMM_Bivalent_enrich$position3, zscoreTMM_Bivalent_enrich$zscoreF)
 
-zscoreTMM_Bivalent_deplete <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position2", "zscoreF")])
+chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_enrich$position3, zscoreTMM_Bivalent_enrich$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
-chisq.test(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF, correct=T)
-table(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF)
+zscoreTMM_Bivalent_deplete <- unique(zscoreTMM[zscoreTMM$histone=="Bivalent" & zscoreTMM$avg<0 & zscoreTMM$pvalueF=="Significant",c("TE", "gene", "position3", "zscoreF")])
 
-chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_deplete$position2, zscoreTMM_Bivalent_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
+chisq.test(zscoreTMM_Bivalent_deplete$position3, zscoreTMM_Bivalent_deplete$zscoreF, correct=T)
+table(zscoreTMM_Bivalent_deplete$position3, zscoreTMM_Bivalent_deplete$zscoreF)
+
+chisq.posthoc.test(as.matrix(table(zscoreTMM_Bivalent_deplete$position3, zscoreTMM_Bivalent_deplete$zscoreF)), simulate.p.value = TRUE, method = "bonferroni")
 
 ```
 
@@ -1621,6 +1716,66 @@ write.table(rbind(freqDepletionH3K9me3_filter,freqDepletionH3K27ac_filter,freqDe
 
 ```
 
+```{r GO-RevGB}
+tissues <- c("head", "gut", "ovary")
+effects <- c("All", "Positive", "Negative")
+for (t in tissues) {
+for (z in effects) {
+if ( z == "All") {
+list_TEs <- unique(zscoreTMM[zscoreTMM$tissue==t & zscoreTMM$pvalueF=="Significant",c("TE", "strainTE", "gene")])
+} else {
+list_TEs <- unique(zscoreTMM[zscoreTMM$tissue==t & zscoreTMM$zscoreF == z & zscoreTMM$pvalueF=="Significant",c("TE", "strainTE", "gene")])
+}
+write.table(x = as.data.frame(list_TEs), file = paste0("R01-GB-GOWINDA/INPUT/",t,".",z,".TE_genes.lst"), row.names = F, col.names = F, quote = F)
+
+#assign(paste0("GO_",t,".",z,".TE_genes.lst"),list_genes)
+
+
+}
+}
+
+gene_annotation <- data.table::fread("R01-GB-GOWINDA/dmel-all-r6.31.gtf")
+gene_head_all <- data.table::fread("R01-GB-GOWINDA/INPUT/head.All.TE_genes.lst", header = F)
+
+
+
+
+# Load data.table package
+library(data.table)
+
+# Ensure gene_annotation is a data.table
+setDT(gene_annotation)
+
+# Filter only genes and calculate length
+gene_lengths <- gene_annotation[V3 == "gene", .(gene_id = sub('.*gene_id "([^"]+)".*', '\\1', V9),
+                                                gene_length = V5 - V4 + 1)]
+
+# Print the result
+print(gene_lengths)
+
+
+# Load data.table package
+library(data.table)
+
+# Ensure data are data.tables
+setDT(gene_head_all)
+setDT(gene_annotation)
+
+# Extract only gene entries from gene_annotation
+gene_info <- gene_annotation[V3 == "gene", .(V9, gene_length = V5 - V4 + 1)]
+
+# Extract the gene ID from the V9 column using regex
+gene_info[, gene_id := sub('.*gene_id "([^"]+)".*', '\\1', V9)]
+
+# Merge with gene_head_all based on the gene ID in V3
+gene_head_all <- merge(gene_head_all, gene_info[, .(gene_id, gene_length)], 
+                       by.x = "V3", by.y = "gene_id", all.x = TRUE)
+
+# Print the result
+print(gene_head_all)
+
+
+```
 
 ```{r GO}
 tissues <- c("head", "gut", "ovary")
@@ -1687,7 +1842,7 @@ rownames(merged_counts) <- merged_counts$position; merged_counts$position=NULL
 chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 
 head_all <- dotplot(go_enrich, title = "Head - All genes")
-write.table(go_enrich@result, "FIGURES/GO_head_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_head_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 # Head positive
 GO_head.Positive.TE_genes.lst <- fread("GO_analysis/head.Positive.TE_genes.lst", header = F)$V1
 go_enrich <- clusterProfiler::enrichGO(gene = GO_head.Positive.TE_genes.lst,
@@ -1727,7 +1882,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Head - Upregulated")
 head_upregulated <- dotplot(go_enrich, title = "Head - Upregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_head_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_head_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 # Head downregulated
 GO_head.Negative.TE_genes.lst <- fread("GO_analysis/head.Negative.TE_genes.lst", header = F)$V1
@@ -1768,7 +1923,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Head - Downregulated")
 head_downregulated <- dotplot(go_enrich, title = "Head - Downregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_head_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_head_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 # Gut all
 GO_gut.All.TE_genes.lst <- fread("GO_analysis/gut.All.TE_genes.lst", header = F)$V1
@@ -1809,7 +1964,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Gut - all genes")
 gut_all <- dotplot(go_enrich, title = "Gut - All genes")
 
-write.table(go_enrich@result, "FIGURES/GO_gut_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_gut_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 GO_gut.Positive.TE_genes.lst <- fread("GO_analysis/gut.Positive.TE_genes.lst", header = F)$V1
 
@@ -1850,7 +2005,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Gut - Upregulated")
 gut_upregulated <-dotplot(go_enrich, title = "Gut - Upregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_gut_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_gut_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 GO_gut.Negative.TE_genes.lst <- fread("GO_analysis/gut.Negative.TE_genes.lst", header = F)$V1
 go_enrich <- clusterProfiler::enrichGO(gene = GO_gut.Negative.TE_genes.lst,
@@ -1890,7 +2045,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Gut - Downregulated")
 gut_downregulated <-dotplot(go_enrich, title = "Gut - Downregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_gut_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_gut_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 GO_ovary.All.TE_genes.lst <- fread("GO_analysis/ovary.All.TE_genes.lst", header = F)$V1
 go_enrich <- clusterProfiler::enrichGO(gene = GO_ovary.All.TE_genes.lst,
@@ -1930,7 +2085,7 @@ chisq.posthoc.test::chisq.posthoc.test(merged_counts)
 dotplot(go_enrich, title = "Ovary - all genes")
 ovary_all <-dotplot(go_enrich, title = "Ovary - All genes")
 
-write.table(go_enrich@result, "FIGURES/GO_ovary_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_ovary_all.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 go_enrich <- clusterProfiler::enrichGO(gene = GO_ovary.Positive.TE_genes.lst,
                       universe = ovary,
@@ -1943,7 +2098,7 @@ go_enrich <- clusterProfiler::enrichGO(gene = GO_ovary.Positive.TE_genes.lst,
 dotplot(go_enrich, title = "Ovary - Upregulated")
 ovary_upregulated <-dotplot(go_enrich, title = "Ovary - Upregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_ovary_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_ovary_upregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 go_enrich <- clusterProfiler::enrichGO(gene = GO_ovary.Negative.TE_genes.lst,
                       universe = ovary,
@@ -1956,7 +2111,7 @@ go_enrich <- clusterProfiler::enrichGO(gene = GO_ovary.Negative.TE_genes.lst,
 dotplot(go_enrich, title = "Ovary - Downregulated")
 ovary_downregulated <-dotplot(go_enrich, title = "Ovary - Downregulated")
 
-write.table(go_enrich@result, "FIGURES/GO_ovary_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_ovary_downregulated.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 go_enrich <- clusterProfiler::enrichGO(gene = unique(zscoreTMM[zscoreTMM$TE%in%metastable_TEs_list,]$gene),
                       universe = all,
@@ -1969,10 +2124,12 @@ go_enrich <- clusterProfiler::enrichGO(gene = unique(zscoreTMM[zscoreTMM$TE%in%m
 dotplot(go_enrich, title = "Metastable TEs")
 metastable <-dotplot(go_enrich, title = "Metastable TEs")
 
-write.table(go_enrich@result, "FIGURES/GO_metastable.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
+#write.table(go_enrich@result, "FIGURES/GO_metastable.tsv", col.names = T, sep = "\t", quote = F, row.names = F)
 
 ggarrange(head_all, head_upregulated, head_downregulated, gut_all, gut_upregulated, gut_downregulated,metastable,labels="AUTO")
 ggsave("FIGURES/Figure_S4.pdf", ggarrange(head_all, head_upregulated, head_downregulated, gut_all, gut_upregulated, gut_downregulated,metastable,labels="AUTO"), width = 18, height = 18)
+ggsave("FIGURES/Figure_S5_new.pdf", ggarrange(head_all, head_upregulated, head_downregulated, gut_all, gut_upregulated, gut_downregulated,labels="AUTO"), width = 14, height = 18)
+
 ```
 
 ```{r}
@@ -2139,6 +2296,9 @@ length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE_id %in% TEs_epigenet
 
 length(unique(epigeneticEffectsTes[!epigeneticEffectsTes$TE %in% TEs_epigenetic_effects & epigeneticEffectsTes$effect=="mix",]$TE)) # 72
 
+# R01
+# with increment H3K9me3
+epigeneticEffectsTes
 
 ## Chi-square
 # TE with effects
@@ -2285,3 +2445,716 @@ for (plot_name in names(plot_list)) {
 }
 
 ```
+
+
+```{r}
+freq_all_TEs <- fread("../TE_frequency_strain.tab")
+zscoreTMM_family <- merge(zscoreTMM,TEinfo2325[,c("TE","family")],by="TE")
+
+library(ggplot2)
+
+calculate_family_comparison <- function(df, histone_mark, e, zscore_sign, p = "Significant") {
+  
+  # Filter dataframe
+  filtered_df <- unique(df[df$effect == e & 
+                              df$histone == histone_mark & 
+                              df$pvalueF == p & 
+                              df$zscoreF == zscore_sign & 
+                              df$`Number_of_genomes_present_(47)` > 5, c("TE", "frequency", "strainTE", "family")])
+  
+  # Initialize new columns
+  filtered_df[, min_freq := NA_real_]
+  filtered_df[, max_freq := NA_real_]
+  filtered_df[, family_mean_freq := NA_real_]
+  filtered_df[, comparison := NA_character_]
+  
+  # List to store the ggplot objects
+  plot_list <- list()
+  
+  # Loop over each TE
+  for (i in seq_len(nrow(filtered_df))) {
+    strain <- filtered_df$strainTE[i]
+    fam <- filtered_df$family[i]
+    te_freq <- as.numeric(filtered_df$frequency[i])
+    
+    # Get all frequencies of the same family in the same strain
+    fam_freqs <- unique(freq_all_TEs[grepl(strain, freq_all_TEs$Genomes) & freq_all_TEs$Family == fam, c("TE name", "Freq.")])
+    
+    if (nrow(fam_freqs) > 0) {
+      mean_freq <- mean(fam_freqs$Freq.)
+      filtered_df$family_mean_freq[i] <- mean_freq
+      filtered_df$min_freq[i] <- min(fam_freqs$Freq.)
+      filtered_df$max_freq[i] <- max(fam_freqs$Freq.)
+      
+      # Compare
+      if (te_freq > mean_freq) {
+        filtered_df$comparison[i] <- "Higher"
+      } else if (te_freq < mean_freq) {
+        filtered_df$comparison[i] <- "Lower"
+      } else {
+        filtered_df$comparison[i] <- "Equal"
+      }
+      
+      # Generate ggplot for this TE
+      p <- ggplot(fam_freqs, aes(x = `Freq.`)) +
+        geom_density(fill = "gray90", color = "gray90") +
+        geom_vline(xintercept = mean_freq, color = "gray0", linetype = "dashed") +
+geom_point(aes(y = 0), x = te_freq, color = "firebrick4", size = 4, shape = 21, fill = "firebrick4") +
+        theme_minimal(base_size = 16) +
+        labs(title = paste0("Family: ", fam, " - Strain: ", strain),
+             x = "Frequency", 
+             y = "Density") +
+        theme(plot.title = element_text(face = "bold"), axis.text = element_text(color="black"))
+      
+      # Store plot in list
+      plot_list[[filtered_df$TE[i]]] <- p
+    }
+  }
+  
+  # Return list with the dataframe and plots
+  return(list(filtered_df = filtered_df, plots = plot_list))
+}
+
+# version with test
+calculate_family_comparison <- function(df, histone_mark, e, zscore_sign, p = "Significant") {
+  
+  # Filter dataframe
+  filtered_df <- unique(df[df$effect == e & 
+                              df$histone == histone_mark & 
+                              df$pvalueF == p & 
+                              df$zscoreF == zscore_sign & 
+                              df$`Number_of_genomes_present_(47)` > 5, 
+                            c("TE", "frequency", "strainTE", "family")])
+  
+  # Initialize new columns
+  filtered_df[, min_freq := NA_real_]
+  filtered_df[, max_freq := NA_real_]
+  filtered_df[, family_mean_freq := NA_real_]
+  filtered_df[, comparison := NA_character_]
+  filtered_df[, wilcox_pval := NA_real_]
+  filtered_df[, wilcox_signif := NA_character_]
+  
+  # List to store the ggplot objects
+  plot_list <- list()
+  
+  # Loop over each TE
+  for (i in seq_len(nrow(filtered_df))) {
+    strain <- filtered_df$strainTE[i]
+    fam <- filtered_df$family[i]
+    te_freq <- as.numeric(filtered_df$frequency[i])
+    
+    # Get all frequencies of the same family in the same strain
+    fam_freqs <- unique(freq_all_TEs[grepl(strain, freq_all_TEs$Genomes) & freq_all_TEs$Family == fam, 
+                                     c("TE name", "Freq.")])
+    
+    if (nrow(fam_freqs) > 0) {
+      mean_freq <- mean(fam_freqs$Freq.)
+      filtered_df$family_mean_freq[i] <- mean_freq
+      filtered_df$min_freq[i] <- min(fam_freqs$Freq.)
+      filtered_df$max_freq[i] <- max(fam_freqs$Freq.)
+      
+      # Wilcoxon test: one-sided (is te_freq > family distribution?)
+      wilcox_result <- tryCatch(
+        wilcox.test(te_freq, fam_freqs$`Freq.`, 
+                    alternative = "greater"),
+        error = function(e) NULL
+      )
+      
+      if (!is.null(wilcox_result)) {
+        filtered_df$wilcox_pval[i] <- wilcox_result$p.value
+        filtered_df$wilcox_signif[i] <- ifelse(wilcox_result$p.value < 0.05, "Yes", "No")
+      }
+      
+      # Compare frequency
+      if (te_freq > mean_freq) {
+        filtered_df$comparison[i] <- "Higher"
+      } else if (te_freq < mean_freq) {
+        filtered_df$comparison[i] <- "Lower"
+      } else {
+        filtered_df$comparison[i] <- "Equal"
+      }
+      
+      # Generate ggplot for this TE
+      p <- ggplot(fam_freqs, aes(x = `Freq.`)) +
+        geom_density(fill = "gray90", color = "gray90") +
+        geom_vline(xintercept = mean_freq, color = "gray0", linetype = "dashed") +
+        geom_point(aes(y = 0), x = te_freq, color = "firebrick4", size = 4, shape = 21, fill = "firebrick4") +
+        theme_minimal(base_size = 16) +
+        labs(title = paste0("Family: ", fam, " - Strain: ", strain),
+             x = "Frequency", 
+             y = "Density") +
+        theme(plot.title = element_text(face = "bold"), 
+              axis.text = element_text(color = "black"))
+      
+      # Store plot in list
+      plot_list[[filtered_df$TE[i]]] <- p
+    }
+  }
+  
+  # Return list with the dataframe and plots
+  return(list(filtered_df = filtered_df, plots = plot_list))
+}
+
+# version with test and permutation
+calculate_family_comparison <- function(df, histone_mark, e, zscore_sign, p = "Significant", n_perm = 1000) {
+  
+  # Filter dataframe
+  filtered_df <- unique(df[df$effect == e & 
+                              df$histone == histone_mark & 
+                              df$pvalueF == p & 
+                              df$zscoreF == zscore_sign & 
+                              df$`Number_of_genomes_present_(47)` > 5, 
+                            c("TE", "frequency", "strainTE", "family")])
+  
+  # Initialize new columns
+  filtered_df[, min_freq := NA_real_]
+  filtered_df[, max_freq := NA_real_]
+  filtered_df[, family_mean_freq := NA_real_]
+  filtered_df[, comparison := NA_character_]
+  filtered_df[, wilcox_pvalue := NA_real_]
+  filtered_df[, perm_pvalue := NA_real_]
+  
+  # List to store the ggplot objects
+  plot_list <- list()
+  
+  # Loop over each TE
+  for (i in seq_len(nrow(filtered_df))) {
+    strain <- filtered_df$strainTE[i]
+    fam <- filtered_df$family[i]
+    te_freq <- as.numeric(filtered_df$frequency[i])
+    
+    # Get all frequencies of the same family in the same strain
+    fam_freqs <- unique(freq_all_TEs[grepl(strain, freq_all_TEs$Genomes) & freq_all_TEs$Family == fam, c("TE name", "Freq.")])
+    
+    if (nrow(fam_freqs) > 0) {
+      family_freqs <- fam_freqs$`Freq.`
+      mean_freq <- mean(family_freqs, na.rm = TRUE)
+      filtered_df$family_mean_freq[i] <- mean_freq
+      filtered_df$min_freq[i] <- min(family_freqs, na.rm = TRUE)
+      filtered_df$max_freq[i] <- max(family_freqs, na.rm = TRUE)
+      
+      ## === Wilcoxon test (one-sided: is TE freq > family freqs?)
+      wilcox_pval <- tryCatch({
+        wilcox.test(x = te_freq, y = family_freqs, alternative = "greater", exact = FALSE)$p.value
+      }, error = function(e) {
+        NA_real_
+      })
+      filtered_df$wilcox_pvalue[i] <- wilcox_pval
+      
+      ## === Permutation test
+      count <- 0
+      all_freqs <- c(family_freqs, te_freq)
+      for (j in seq_len(n_perm)) {
+        shuffled <- sample(all_freqs)
+        perm_te <- shuffled[1]
+        if (perm_te >= te_freq) {
+          count <- count + 1
+        }
+      }
+      perm_pval <- count / n_perm
+      filtered_df$perm_pvalue[i] <- perm_pval
+      
+      # Compare based on mean
+      if (te_freq > mean_freq) {
+        filtered_df$comparison[i] <- "Higher"
+      } else if (te_freq < mean_freq) {
+        filtered_df$comparison[i] <- "Lower"
+      } else {
+        filtered_df$comparison[i] <- "Equal"
+      }
+      
+      # Generate ggplot for this TE
+      p <- ggplot(fam_freqs, aes(x = `Freq.`)) +
+        geom_density(fill = "gray90", color = "gray90") +
+        geom_vline(xintercept = mean_freq, color = "gray0", linetype = "dashed") +
+        geom_point(aes(y = 0), x = te_freq, color = "firebrick4", size = 4, shape = 21, fill = "firebrick4") +
+        theme_minimal(base_size = 16) +
+        labs(title = paste0("Family: ", fam, " - Strain: ", strain),
+             x = "Frequency", 
+             y = "Density") +
+        theme(plot.title = element_text(face = "bold"), axis.text = element_text(color = "black"))
+      
+      # Store plot in list
+      plot_list[[filtered_df$TE[i]]] <- p
+    }
+  }
+  
+  # Return list with the dataframe and plots
+  return(list(filtered_df = filtered_df, plots = plot_list))
+}
+
+
+
+# Increment + H3K9me3 (already done)
+TEs_high_freq_enrich_H3K9me3_downr <- calculate_family_comparison(zscoreTMM_family, "H3K9me3", "increment", "Negative")
+plots <- TEs_high_freq_enrich_H3K9me3_downr$plots
+combined_plot <- plot_grid(plotlist = plots, ncol = 3)
+
+# Create new column summarizing family_mean_freq, frequency, and comparison
+TEs_high_freq_enrich_H3K9me3_downr$filtered_df[, summary := paste0(family, " Min-Max:", round(min_freq,3), "-",round(max_freq,3), ";Mean:", round(family_mean_freq,3), paste0(" (", comparison, ")"))]
+
+
+# Increment + H3K27ac
+TEs_high_freq_enrich_H3K27ac_up <- calculate_family_comparison(zscoreTMM_family, "H3K27ac", "increment", "Positive")
+
+plots <- TEs_high_freq_enrich_H3K27ac_up$plots
+combined_plot <- plot_grid(plotlist = plots, ncol = 1)
+
+# Create new column summarizing family_mean_freq, frequency, and comparison
+TEs_high_freq_enrich_H3K27ac_up$filtered_df[, summary := paste0(family, " Min-Max:", round(min_freq,3), "-",round(max_freq,3), ";Mean:", round(family_mean_freq,3), paste0(" (", comparison, ")"))]
+
+
+# Depletion + H3K9me3
+TEs_high_freq_enrich_H3K9me3_up <- calculate_family_comparison(zscoreTMM_family, "H3K9me3", "depletion", "Positive")
+
+plots <- TEs_high_freq_enrich_H3K9me3_up$plots
+combined_plot <- plot_grid(plotlist = plots, ncol = 3)
+
+# Create new column summarizing family_mean_freq, frequency, and comparison
+TEs_high_freq_enrich_H3K9me3_up$filtered_df[, summary := paste0(family, " Min-Max:", round(min_freq,3), "-",round(max_freq,3), ";Mean:", round(family_mean_freq,3), paste0(" (", comparison, ")"))]
+
+# Depletion + H3K27ac
+TEs_high_freq_enrich_H3K27ac_down <- calculate_family_comparison(zscoreTMM_family, "H3K27ac", "depletion", "Negative")
+
+
+plots <- TEs_high_freq_enrich_H3K27ac_down$plots
+combined_plot <- plot_grid(plotlist = plots, ncol = 3)
+
+# Create new column summarizing family_mean_freq, frequency, and comparison
+TEs_high_freq_enrich_H3K27ac_down$filtered_df[, summary := paste0(family, " Min-Max:", round(min_freq,3), "-",round(max_freq,3), ";Mean:", round(family_mean_freq,3), paste0(" (", comparison, ")"))]
+
+
+
+```
+
+```{r R01-GB-check length}
+TOM_007_annot <- fread("DATA/TEannotations/TOM-007.bed")
+
+epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$histone=="H3K9me3" & epigeneticEffectsTesInfo$effect=="increment",]
+
+TOM_007_annot$V8<-"No effect"
+TOM_007_annot[TOM_007_annot$V4%in%unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$strainTE=="TOM-007" | epigeneticEffectsTesInfo$effect=="depletion" & epigeneticEffectsTesInfo$strainTE=="TOM-007",]$TE),]$V8<-"TEs with effect"
+
+ggplot(TOM_007_annot,aes(x=V8,y=log(V5))) + geom_boxplot()
+
+AKA_017_annot <- fread("DATA/TEannotations/AKA-017.bed")
+AKA_017_annot$V8<-"No effect"
+AKA_017_annot[AKA_017_annot$V4%in%unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$strainTE=="AKA-017" | epigeneticEffectsTesInfo$effect=="depletion" & epigeneticEffectsTesInfo$strainTE=="AKA-017",]$TE),]$V8<-"TEs with effect"
+
+JUT_011_annot <- fread("DATA/TEannotations/JUT-011.bed")
+JUT_011_annot$V8<-"No effect"
+JUT_011_annot[JUT_011_annot$V4%in%unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$strainTE=="JUT-011" | epigeneticEffectsTesInfo$effect=="depletion" & epigeneticEffectsTesInfo$strainTE=="JUT-011",]$TE),]$V8<-"TEs with effect"
+
+MUN_016_annot <- fread("DATA/TEannotations/MUN-016.bed")
+MUN_016_annot$V8<-"No effect"
+MUN_016_annot[MUN_016_annot$V4%in%unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$strainTE=="MUN-016" | epigeneticEffectsTesInfo$effect=="depletion" & epigeneticEffectsTesInfo$strainTE=="MUN-016",]$TE),]$V8<-"TEs with effect"
+
+
+SLA_001_annot <- fread("DATA/TEannotations/SLA-001.bed")
+SLA_001_annot$V8<-"No effect"
+SLA_001_annot[SLA_001_annot$V4%in%unique(epigeneticEffectsTesInfo[epigeneticEffectsTesInfo$effect=="increment" & epigeneticEffectsTesInfo$strainTE=="SLA-001" | epigeneticEffectsTesInfo$effect=="depletion" & epigeneticEffectsTesInfo$strainTE=="SLA-001",]$TE),]$V8<-"TEs with effect"
+```
+
+
+
+```{r}
+length(unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="AKA-017"]))
+
+freq_all_TEs[freq_all_TEs$`TE name`%in%unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="AKA-017"])] %>% subset(Genomes=="AKA-017") %>%
+  dplyr::pull(`TE name`) %>%
+  unique() %>%
+  length()
+
+sum(!grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="AKA-017"])))
+sum(grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="AKA-017"])))
+
+
+length(unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="MUN-016"]))
+
+freq_all_TEs[freq_all_TEs$`TE name`%in%unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="MUN-016"])] %>% subset(Genomes=="MUN-016") %>%
+  dplyr::pull(`TE name`) %>%
+  unique() %>%
+  length()
+
+sum(!grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="MUN-016"])))
+sum(grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="MUN-016"])))
+
+
+
+length(unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="JUT-011"]))
+
+freq_all_TEs[freq_all_TEs$`TE name`%in%unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="JUT-011"])] %>% subset(Genomes=="JUT-011") %>%
+  dplyr::pull(`TE name`) %>%
+  unique() %>%
+  length()
+
+sum(!grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="JUT-011"])))
+sum(grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="JUT-011"])))
+
+
+length(unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="SLA-001"]))
+
+freq_all_TEs[freq_all_TEs$`TE name`%in%unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="SLA-001"])] %>% subset(Genomes=="SLA-001") %>%
+  dplyr::pull(`TE name`) %>%
+  unique() %>%
+  length()
+
+sum(!grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="SLA-001"])))
+sum(grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="SLA-001"])))
+
+
+length(unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="TOM-007"]))
+
+freq_all_TEs[freq_all_TEs$`TE name`%in%unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="TOM-007"])] %>% subset(Genomes=="TOM-007") %>%
+  dplyr::pull(`TE name`) %>%
+  unique() %>%
+  length()
+
+sum(!grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="TOM-007"])))
+sum(grepl("^FBti", unique(epigeneticEffectsTesInfo$TE[epigeneticEffectsTesInfo$effect %in% c("increment", "depletion") & epigeneticEffectsTesInfo$strainTE=="TOM-007"])))
+
+```
+
+```{r}
+AKA_017_TEs <- fread("DATA/TEannotations/TE-Clean-Nested/AKA-017.bed")
+colnames(AKA_017_TEs) <- c("chr", "start", "end", "TE", "length", "strand", "Family")
+AKA_017_TEs$strain <- "AKA-017"
+
+JUT_011_TEs <- fread("DATA/TEannotations/TE-Clean-Nested/JUT-011.bed")
+colnames(JUT_011_TEs) <- c("chr", "start", "end", "TE", "length", "strand", "Family")
+JUT_011_TEs$strain <- "JUT-011"
+
+MUN_016_TEs <- fread("DATA/TEannotations/TE-Clean-Nested/MUN-016.bed")
+colnames(MUN_016_TEs) <- c("chr", "start", "end", "TE", "length", "strand", "Family")
+MUN_016_TEs$strain <- "MUN-016"
+
+SLA_001_TEs <- fread("DATA/TEannotations/TE-Clean-Nested/SLA-001.bed")
+colnames(SLA_001_TEs) <- c("chr", "start", "end", "TE", "length", "strand", "Family")
+SLA_001_TEs$strain <- "SLA-001"
+
+TOM_007_TEs <- fread("DATA/TEannotations/TE-Clean-Nested/TOM-007.bed")
+colnames(TOM_007_TEs) <- c("chr", "start", "end", "TE", "length", "strand", "Family")
+TOM_007_TEs$strain <- "TOM-007"
+
+library(dplyr)
+strains_TEs <- rbind(AKA_017_TEs, JUT_011_TEs, MUN_016_TEs, SLA_001_TEs, TOM_007_TEs)
+strains_TEs %>% group_by(strain) %>% summarize(totalInsertions=n_distinct(TE), nFamilies=n_distinct(Family))
+strains_TEs_with_freq <- strains_TEs %>% group_by(TE) %>% mutate(n=n_distinct(strain))
+strains_TEs %>% group_by(TE) %>% summarize(n=n_distinct(strain)) %>%
+        summarise(unique = sum(n==1), fixed = sum(n==5), pol = sum(n>1 & n<5))
+
+zscoreTMM_Freq <- zscoreTMM
+zscoreTMM_Freq<-merge(zscoreTMM_Freq, unique(strains_TEs_with_freq[,c("TE","n")]), by="TE")
+
+
+table(unique(zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" , c("TE", "distance","n")  ])$distance>1000,unique(zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,  ])$n)
+
+zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017")
+length(unique(zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_1000$TE))
+length(unique(zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_1000$gene))
+write.table(zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_1000,"R01-GB-expression_analysis/INPUT/zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_1000.tab",col.names = T,sep="\t",quote = F, row.names = F)
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017")%>% select(TE) %>% unique() %>% count() # 40
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="head")%>% select(TE) %>% unique() %>% count() # 17
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 9
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 15
+
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017")%>% select(TE) %>% unique() %>% count() # 7
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="head")%>% select(TE) %>% unique() %>% count() # 2
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 4
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 1
+
+zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017")
+length(unique(zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_2000$TE))
+length(unique(zscoreTMM_Freq_AKA017_H3K9me3enrichment_negative_2000$gene))
+
+
+zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016")
+length(unique(zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_1000$TE))
+length(unique(zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_1000$gene))
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016")%>% select(TE) %>% unique() %>% count() # 34
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="head")%>% select(TE) %>% unique() %>% count() # 2
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 2
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 31
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016")%>% select(TE) %>% unique() %>% count() # 12
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="head")%>% select(TE) %>% unique() %>% count() # 1
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 9
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 3
+
+zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016")
+length(unique(zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_2000$TE))
+length(unique(zscoreTMM_Freq_MUN016_H3K9me3enrichment_negative_2000$gene))
+
+
+zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011")
+length(unique(zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_1000$TE))
+length(unique(zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_1000$gene))
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011")%>% select(TE) %>% unique() %>% count() # 72
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="head")%>% select(TE) %>% unique() %>% count() # 26
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 38
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 25
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011")%>% select(TE) %>% unique() %>% count() # 11
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="head")%>% select(TE) %>% unique() %>% count() # 2
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 6
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 3
+
+zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011")
+length(unique(zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_2000$TE))
+length(unique(zscoreTMM_Freq_JUT011_H3K9me3enrichment_negative_2000$gene))
+
+
+zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001")
+length(unique(zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_1000$TE))
+length(unique(zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_1000$gene))
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001")%>% select(TE) %>% unique() %>% count() # 2
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="head")%>% select(TE) %>% unique() %>% count() # 0
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 0
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 2
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001")%>% select(TE) %>% unique() %>% count() # 5
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="head")%>% select(TE) %>% unique() %>% count() # 0
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 3
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 2
+
+zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001")
+length(unique(zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_2000$TE))
+length(unique(zscoreTMM_Freq_SLA001_H3K9me3enrichment_negative_2000$gene))
+
+
+zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007")
+length(unique(zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_1000$TE))
+length(unique(zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_1000$gene))
+
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007")%>% select(TE) %>% unique() %>% count() # 71
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="head")%>% select(TE) %>% unique() %>% count() # 4
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 25
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 54
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007")%>% select(TE) %>% unique() %>% count() # 10
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="head")%>% select(TE) %>% unique() %>% count() # 9
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="gut")%>% select(TE) %>% unique() %>% count() # 1
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="ovary")%>% select(TE) %>% unique() %>% count() # 0
+
+zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Negative" ,] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007")
+length(unique(zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_2000$TE))
+length(unique(zscoreTMM_Freq_TOM007_H3K9me3enrichment_negative_2000$gene))
+
+zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017")
+length(unique(zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_1000$TE))
+length(unique(zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_1000$gene))
+
+
+zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017")
+length(unique(zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_2000$TE))
+length(unique(zscoreTMM_Freq_AKA017_H3K27acenrichment_positive_2000$gene))
+
+
+zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016")
+length(unique(zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_1000$TE))
+length(unique(zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_1000$gene))
+
+
+zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016")
+length(unique(zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_2000$TE))
+length(unique(zscoreTMM_Freq_MUN016_H3K27acenrichment_positive_2000$gene))
+
+
+zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011")
+length(unique(zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_1000$TE))
+length(unique(zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_1000$gene))
+
+
+zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011")
+length(unique(zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_2000$TE))
+length(unique(zscoreTMM_Freq_JUT011_H3K27acenrichment_positive_2000$gene))
+
+
+zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001")
+length(unique(zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_1000$TE))
+length(unique(zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_1000$gene))
+
+zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001")
+length(unique(zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_2000$TE))
+length(unique(zscoreTMM_Freq_SLA001_H3K27acenrichment_positive_2000$gene))
+
+
+zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_1000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007")
+length(unique(zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_1000$TE))
+length(unique(zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_1000$gene))
+
+
+zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_2000<-zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" & zscoreTMM_Freq$zscoreF=="Positive" ,] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007")
+length(unique(zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_2000$TE))
+length(unique(zscoreTMM_Freq_TOM007_H3K27acenrichment_positive_2000$gene))
+
+# 
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count() # 81
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="head") %>% select(TE) %>% unique() %>% count() # 32 
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 29 
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 25 
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count() # 68
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="head") %>% select(TE) %>% unique() %>% count() # 14
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 29 
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 25 
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count() # 97
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="head") %>% select(TE) %>% unique() %>% count() # 7
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 16
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 82
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count() # 33
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="head") %>% select(TE) %>% unique() %>% count() # 3
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 15
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 18
+
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count() # 191
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="head") %>% select(TE) %>% unique() %>% count() # 57
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="gut") %>% select(TE) %>% unique() %>% count() # 98
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 124
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count() # 46
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="head") %>% select(TE) %>% unique() %>% count() # 9
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="gut") %>% select(TE) %>% unique() %>% count() # 27
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011", tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 14
+
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count() # 20
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="head") %>% select(TE) %>% unique() %>% count() # 0
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 6
+ zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 15
+ 
+ zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count() # 17
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="head") %>% select(TE) %>% unique() %>% count() # 2
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 10
+ zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 7
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count() # 182
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="head") %>% select(TE) %>% unique() %>% count() # 9
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 72
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 152
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count() # 66
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="head") %>% select(TE) %>% unique() %>% count() # 40
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="gut") %>% select(TE) %>% unique() %>% count() # 28
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007",tissue=="ovary") %>% select(TE) %>% unique() %>% count() # 9
+
+# significant affect expr
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count() # 48
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"& zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  & zscoreTMM_Freq$pvalueF =="Significant",] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"& zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 1000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  & zscoreTMM_Freq$pvalueF =="Significant",] %>% filter(n==1, distance <= 1000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+
+#2kb
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"& zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K9me3" & zscoreTMM_Freq$effect=="increment"  & zscoreTMM_Freq$pvalueF =="Significant",] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  ,] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="AKA-017") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="MUN-016") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"& zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="JUT-011") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment" & zscoreTMM_Freq$pvalueF =="Significant" ,] %>% filter(n==1, distance <= 2000,strainTE=="SLA-001") %>% select(TE) %>% unique() %>% count()
+
+zscoreTMM_Freq[zscoreTMM_Freq$histone=="H3K27ac" & zscoreTMM_Freq$effect=="increment"  & zscoreTMM_Freq$pvalueF =="Significant",] %>% filter(n==1, distance <= 2000,strainTE=="TOM-007") %>% select(TE) %>% unique() %>% count()
+```
+```{r}
+strains_TEs_freq1<-strains_TEs %>% group_by(TE) %>% mutate(n=n_distinct(strain)) %>% filter(n==1)
+write.table(strains_TEs_freq1[strains_TEs_freq1$strain=="AKA-017",], "R01-GB-expression_analysis/INPUT/AKA-017_TE_unique.bed", quote = F, sep = "\t", col.names = F, row.names = F)
+write.table(strains_TEs_freq1[strains_TEs_freq1$strain=="JUT-011",], "R01-GB-expression_analysis/INPUT/JUT-011_TE_unique.bed", quote = F, sep = "\t", col.names = F, row.names = F)
+write.table(strains_TEs_freq1[strains_TEs_freq1$strain=="MUN-016",], "R01-GB-expression_analysis/INPUT/MUN-016_TE_unique.bed", quote = F, sep = "\t", col.names = F, row.names = F)
+write.table(strains_TEs_freq1[strains_TEs_freq1$strain=="SLA-001",], "R01-GB-expression_analysis/INPUT/SLA-001_TE_unique.bed", quote = F, sep = "\t", col.names = F, row.names = F)
+write.table(strains_TEs_freq1[strains_TEs_freq1$strain=="TOM-007",], "R01-GB-expression_analysis/INPUT/TOM-007_TE_unique.bed", quote = F, sep = "\t", col.names = F, row.names = F)
+
+```
+
