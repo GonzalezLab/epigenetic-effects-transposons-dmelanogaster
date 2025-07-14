@@ -12,7 +12,7 @@ Scripts and data for the manuscript "The epigenetics effects of transposable ele
 - **ANALYSES_EPIGENETICS.Rmd**: R Markdown documents with the code used for doing analyses and creating figures
 
 ## Citation
-Coronado-Zamora & González (2023) The epigenetics effects of transposable elements are not restricted to gene silencing. BioRxiv.
+Coronado-Zamora & González (2025) The epigenetics effects of transposable elements are not restricted to gene silencing. Genome Biology.
 
 ## Contact
 
